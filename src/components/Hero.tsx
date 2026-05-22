@@ -34,7 +34,7 @@ export function Hero({ activeSubSlide = 0 }: HeroProps) {
     <section className="relative h-screen w-full flex flex-col justify-center items-center overflow-hidden bg-[#0a0a0a]">
       {/* Background Image Slider with Real Scroll-Slide Effect */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-[#0a0a0a]">
-        <AnimatePresence mode="popLayout" custom={direction}>
+        <AnimatePresence custom={direction}>
           <motion.img 
             key={currentSlide}
             src={slideData[currentSlide]?.img || img10} 
