@@ -224,7 +224,7 @@ export default function App() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#0a0a0a] overflow-hidden font-sans">
+    <div className="fixed inset-0 w-full h-full bg-[#0a0a0a] overflow-hidden font-sans">
       {/* Absolute Noise Overlay */}
       <div className="fixed inset-0 bg-noise z-0 pointer-events-none"></div>
 
@@ -235,25 +235,25 @@ export default function App() {
       <div
         ref={containerRef}
         id="main-scroll-container"
-        className="flex flex-row flex-nowrap overflow-x-auto overflow-y-hidden h-screen w-screen snap-x snap-mandatory scroll-smooth relative z-10 select-none scrollbar-none"
+        className="flex flex-row flex-nowrap overflow-x-auto overflow-y-hidden h-full w-full snap-x snap-mandatory relative z-10 select-none scrollbar-none"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        <div id="hero" className="w-screen min-w-full h-screen flex-shrink-0 snap-start">
+        <div id="hero" className="w-full min-w-full h-full flex-shrink-0 snap-start">
           <Hero activeSubSlide={heroSubSlide} />
         </div>
-        <div id="nosotros" className="w-screen min-w-full h-screen flex-shrink-0 snap-start">
+        <div id="nosotros" className="w-full min-w-full h-full flex-shrink-0 snap-start">
           <About />
         </div>
-        <div id="casos" className="w-screen min-w-full h-screen flex-shrink-0 snap-start">
+        <div id="casos" className="w-full min-w-full h-full flex-shrink-0 snap-start">
           <Gallery />
         </div>
-        <div id="servicios" className="w-screen min-w-full h-screen flex-shrink-0 snap-start">
+        <div id="servicios" className="w-full min-w-full h-full flex-shrink-0 snap-start">
           <Services />
         </div>
-        <div id="experiencia" className="w-screen min-w-full h-screen flex-shrink-0 snap-start">
+        <div id="experiencia" className="w-full min-w-full h-full flex-shrink-0 snap-start">
           <Experience />
         </div>
-        <div id="contacto" className="w-screen min-w-full h-screen flex-shrink-0 snap-start">
+        <div id="contacto" className="w-full min-w-full h-full flex-shrink-0 snap-start">
           <Contact />
         </div>
       </div>
