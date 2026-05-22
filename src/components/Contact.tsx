@@ -2,7 +2,7 @@ import { motion } from 'motion/react';
 
 export function Contact() {
   return (
-    <section className="w-screen h-screen shrink-0 snap-start relative px-6 md:px-16 lg:px-24 py-16 md:py-20 flex flex-col justify-center bg-[#0a0a0a] text-[#f4f3ef] overflow-hidden">
+    <section className="w-screen h-screen shrink-0 snap-start relative px-6 md:px-16 lg:px-24 py-16 md:py-20 flex flex-col justify-center bg-[#0a0a0a] text-[var(--color-bellini-primary)] overflow-hidden">
       <div className="max-w-7xl mx-auto w-full flex flex-col justify-between h-full max-h-[80vh] md:max-h-[75vh]">
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-start">
@@ -34,7 +34,7 @@ export function Contact() {
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
               >
-                <p className="text-[#f4f3ef] mb-1 font-medium">Ubicación</p>
+                <p className="text-[var(--color-bellini-primary)] mb-1 font-medium">Ubicación</p>
                 <p>Av. Alvear 1890, Recoleta</p>
               </motion.div>
 
@@ -85,7 +85,14 @@ export function Contact() {
         {/* Integrated Luxury Editorial Footer */}
         <div className="w-full border-t border-[#222] pt-6 flex flex-col md:flex-row justify-between items-center text-[9px] uppercase tracking-[0.2em] text-[#555] gap-4">
           <div>© {new Date().getFullYear()} Bellini Dental Studio.</div>
-          <div className="font-serif text-[14px] tracking-[0.25em] text-[#f4f3ef] uppercase">Bellini</div>
+          <div className="flex flex-col items-center">
+            <span className="text-[12px] md:text-[14px] tracking-[0.25em] font-serif uppercase text-[var(--color-bellini-primary)]">
+              Bellini
+            </span>
+            <span className="text-[5px] md:text-[6px] tracking-[0.4em] font-sans uppercase text-[var(--color-bellini-primary)]/80 mt-1">
+              Odontología
+            </span>
+          </div>
           <div className="flex gap-6 pointer-events-auto">
             <a href="#" className="hover:text-white transition-colors">Instagram</a>
             <a href="#" className="hover:text-white transition-colors">WhatsApp</a>

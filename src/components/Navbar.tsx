@@ -44,9 +44,14 @@ export function Navbar({ activeSection = 'hero' }: NavbarProps) {
             e.preventDefault();
             document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth', inline: 'start' });
           }}
-          className="text-xl md:text-2xl tracking-[0.25em] font-serif uppercase text-[var(--color-bellini-bone)] z-50 transition-opacity hover:opacity-75 animate-fade-in"
+          className="flex flex-col items-center z-50 transition-opacity hover:opacity-75 animate-fade-in"
         >
-          Bellini
+          <span className="text-xl md:text-2xl tracking-[0.25em] font-serif uppercase text-[var(--color-bellini-primary)]">
+            Bellini
+          </span>
+          <span className="text-[6px] md:text-[8px] tracking-[0.4em] font-sans uppercase text-[var(--color-bellini-primary)]/80 mt-1">
+            Odontología
+          </span>
         </a>
         <div className="hidden md:flex gap-12 text-[10px] uppercase font-medium tracking-[0.2em]">
           {navLinks.map((link) => {
@@ -56,7 +61,7 @@ export function Navbar({ activeSection = 'hero' }: NavbarProps) {
                 key={link.name}
                 href={link.href} 
                 onClick={(e) => handleNavClick(e, link.targetId)}
-                className={`relative py-1 transition-colors duration-500 hover:text-[var(--color-bellini-bone)] ${
+                className={`relative py-1 transition-colors duration-500 hover:text-[var(--color-bellini-primary)] ${
                   isActive ? 'text-[var(--color-bellini-bone)] font-semibold' : 'text-[var(--color-bellini-bone)]/50'
                 }`}
               >
@@ -64,7 +69,7 @@ export function Navbar({ activeSection = 'hero' }: NavbarProps) {
                 {isActive && (
                   <motion.div 
                     layoutId="activeUnderline" 
-                    className="absolute bottom-0 left-0 right-0 h-[1px] bg-[var(--color-bellini-bone)]"
+                    className="absolute bottom-0 left-0 right-0 h-[1px] bg-[var(--color-bellini-primary)]"
                     transition={{ type: 'spring', damping: 20, stiffness: 120 }}
                   />
                 )}

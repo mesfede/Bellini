@@ -1,55 +1,149 @@
-import { motion } from 'motion/react';
-import { default as archHero } from '../assets/images/bellini_hero_arch_1779193529939.png';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { default as img10 } from '../assets/images/bellini_imagen (10).jpeg';
+import { default as img11 } from '../assets/images/bellini_imagen (11).jpeg';
+import { default as img12 } from '../assets/images/bellini_imagen (12).jpeg';
 
-export function Hero() {
+interface HeroProps {
+  activeSubSlide?: number;
+}
+
+const slideData = [
+  {
+    img: img10,
+    subtitle: "Estudio de Odontología",
+    title: "Odontología de precisión estética.",
+  },
+  {
+    img: img11,
+    subtitle: "Estudio de Odontología",
+    title: "La sutileza de una armonía invisible.",
+  },
+  {
+    img: img12,
+    subtitle: "Estudio de Odontología",
+    title: "Su bienestar comienza con la calma.",
+  }
+];
+
+export function Hero({ activeSubSlide = 0 }: HeroProps) {
+  const currentSlide = activeSubSlide;
+  const [prevSlide, setPrevSlide] = useState(0);
+  const [direction, setDirection] = useState(1); // 1 for right (next), -1 for left (prev)
+
+  useEffect(() => {
+    if (activeSubSlide > prevSlide) {
+      setDirection(1);
+    } else if (activeSubSlide < prevSlide) {
+      setDirection(-1);
+    }
+    setPrevSlide(activeSubSlide);
+  }, [activeSubSlide, prevSlide]);
+
   return (
     <section className="relative h-screen w-full flex flex-col justify-center items-center overflow-hidden bg-[#0a0a0a]">
-      {/* Background Image */}
-      <motion.div 
-        initial={{ scale: 1.1, opacity: 0 }}
-        animate={{ scale: 1, opacity: 0.25 }}
-        transition={{ duration: 2, ease: "easeOut" }}
-        className="absolute inset-0 z-0"
-      >
-        <img 
-          src={archHero} 
-          alt="Bellini luxury architecture" 
-          className="w-full h-full object-cover filter grayscale contrast-125"
-        />
+      {/* Background Image Slider with Real Scroll-Slide Effect */}
+      <div className="absolute inset-0 z-0 overflow-hidden bg-[#0a0a0a]">
+        <AnimatePresence mode="popLayout" custom={direction}>
+          <motion.img 
+            key={currentSlide}
+            src={slideData[currentSlide]?.img || img10} 
+            alt="Bellini luxury dentistry" 
+            className="absolute inset-0 w-full h-full object-cover filter grayscale contrast-125 select-none"
+            custom={direction}
+            initial={{ 
+              x: direction > 0 ? "100%" : "-100%", 
+              opacity: 0 
+            }}
+            animate={{ 
+              x: "0%", 
+              opacity: 0.25,
+              transition: { 
+                x: { duration: 1.4, ease: [0.16, 1, 0.3, 1] },
+                opacity: { duration: 1.2, ease: "easeInOut" }
+              }
+            }}
+            exit={{ 
+              x: direction > 0 ? "-100%" : "100%",
+              opacity: 0,
+              transition: { 
+                x: { duration: 1.4, ease: [0.16, 1, 0.3, 1] },
+                opacity: { duration: 1.2, ease: "easeInOut" }
+              }
+            }}
+          />
+        </AnimatePresence>
         {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-transparent to-[#0a0a0a] opacity-90"></div>
-      </motion.div>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-transparent to-[#0a0a0a] opacity-90 z-10 pointer-events-none"></div>
+      </div>
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 mt-24">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="overflow-hidden"
-        >
-          <span className="block text-[9px] md:text-[11px] uppercase tracking-[0.4em] text-[var(--color-bellini-bone)]/50 mb-8">
-            Estudio Odontológico
-          </span>
-        </motion.div>
+      <div className="relative z-10 w-full h-full max-w-7xl mx-auto px-6 md:px-16 lg:px-24 flex flex-col justify-end pb-32 md:pb-36">
+        <div className="flex flex-col md:flex-row items-start md:items-end justify-between w-full gap-8 border-l border-[var(--color-bellini-primary)]/10 pl-6 md:pl-8">
+          
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={currentSlide}
+              custom={direction}
+              initial={{ opacity: 0, x: direction > 0 ? 50 : -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direction > 0 ? -50 : 50 }}
+              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col items-start text-left"
+            >
+              {/* Very snug line spacing and removed 'Autor' */}
+              <span className="block text-[9px] md:text-[10px] uppercase tracking-[0.4em] text-[#4C4F54] mb-0.5 select-none">
+                {slideData[currentSlide]?.subtitle}
+              </span>
 
-        <motion.h1 
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="font-serif text-5xl md:text-7xl lg:text-8xl tracking-tight text-[var(--color-bellini-bone)] leading-[0.9] text-balance max-w-4xl"
-        >
-          Odontología de precisión estética.
-        </motion.h1>
+              <h1 className="font-serif text-sm sm:text-lg md:text-2xl lg:text-3xl tracking-[0.05em] text-[var(--color-bellini-primary)]/35 leading-none font-light whitespace-nowrap select-none">
+                {slideData[currentSlide]?.title}
+              </h1>
+            </motion.div>
+          </AnimatePresence>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.5, delay: 1.2 }}
-          className="mt-20 md:mt-32"
-        >
-          <div className="w-[1px] h-24 bg-[var(--color-bellini-bone)] opacity-20 mx-auto"></div>
-        </motion.div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.4 }}
+            transition={{ duration: 1.5, delay: 1.2 }}
+            className="hidden md:flex flex-col text-[8px] uppercase tracking-[0.3em] text-[#4C4F54] text-right font-light items-end pl-12"
+          >
+            <span className="font-semibold text-[var(--color-bellini-primary)]/50 mb-1">Bellini Studio</span>
+            <span className="text-[#4C4F54]/80">Espacios de Salud & Arquitectura</span>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Sutil microindicador de scroll hacia la derecha */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center pointer-events-none opacity-50 select-none">
+        <span className="text-[7.5px] uppercase tracking-[0.3em] text-[#4C4F54] mb-2 font-light">
+          Scroll para recorrer
+        </span>
+        <div className="flex items-center gap-2">
+          {/* Mouse silhouette style horizontal track */}
+          <div className="w-10 h-5 rounded-full border border-[#4C4F54]/30 relative flex items-center px-1">
+            <motion.div 
+              className="w-1.5 h-1.5 rounded-full bg-[var(--color-bellini-primary)]"
+              animate={{ x: [0, 22, 0] }}
+              transition={{
+                duration: 2.2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            />
+          </div>
+          <motion.span 
+            className="text-[10px] text-[#4C4F54] leading-none"
+            animate={{ x: [0, 3, 0] }}
+            transition={{
+              duration: 2.2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            →
+          </motion.span>
+        </div>
       </div>
     </section>
   );

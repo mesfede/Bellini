@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { default as portrait } from '../assets/images/bellini_portrait_patient_1779193610094.png';
+import { default as portrait } from '../assets/images/bellini_imagen (2).jpeg';
 import { Watermark } from './Watermark';
 
 export function About() {
@@ -22,7 +22,7 @@ export function About() {
               className="w-full h-full object-cover scale-[1.02] filter grayscale opacity-75 transition-all duration-1000 origin-center hover:opacity-90"
             />
           </div>
-          <div className="absolute -bottom-6 left-6 w-36 h-36 border border-[var(--color-bellini-bone)] opacity-10 -z-10 rounded-full"></div>
+          <div className="absolute -bottom-6 left-6 w-36 h-36 border border-[var(--color-bellini-primary)] opacity-10 -z-10 rounded-full"></div>
         </motion.div>
 
         <motion.div 
@@ -32,11 +32,11 @@ export function About() {
           transition={{ duration: 1.2, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="col-span-1 md:col-span-7 flex flex-col justify-center pt-4 md:pt-0"
         >
-          <span className="text-[9px] uppercase tracking-[0.3em] text-[#f4f3ef]/50 mb-4 md:mb-6 block">
+          <span className="text-[9px] uppercase tracking-[0.3em] text-[var(--color-bellini-primary)]/50 mb-4 md:mb-6 block">
             El Estudio
           </span>
           
-          <h2 className="font-serif text-2xl md:text-4xl lg:text-5xl text-[var(--color-bellini-bone)] leading-tight mb-6 md:mb-8">
+          <h2 className="font-serif text-2xl md:text-4xl lg:text-5xl text-[var(--color-bellini-primary)] leading-tight mb-6 md:mb-8">
             Una sinergia <i className="text-[#f4f3ef]/60 font-light">silenciosa</i> <br className="hidden lg:block" />entre ciencia y arte.
           </h2>
 
@@ -59,7 +59,7 @@ export function About() {
               className="inline-flex items-center gap-4 text-[10px] uppercase tracking-[0.2em] text-[var(--color-bellini-bone)] hover:opacity-50 transition-opacity"
             >
               <span>Conocer más</span>
-              <div className="w-8 h-[1px] bg-[var(--color-bellini-bone)]"></div>
+              <div className="w-8 h-[1px] bg-[var(--color-bellini-primary)]"></div>
             </a>
           </div>
         </motion.div>

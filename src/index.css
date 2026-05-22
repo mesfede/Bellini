@@ -4,7 +4,8 @@
 @theme {
   --color-bellini-black: #0a0a0a;
   --color-bellini-grey: #4c4f54;
-  --color-bellini-bone: #f4f3ef;
+  --color-bellini-bone: #ECE8E1;
+  --color-bellini-primary: #ECE8E1;
   
   --font-serif: 'Playfair Display', serif;
   --font-sans: 'Montserrat', sans-serif;

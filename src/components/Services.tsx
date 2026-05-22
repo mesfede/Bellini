@@ -20,7 +20,7 @@ export function Services() {
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="text-[9px] uppercase tracking-[0.3em] text-[#f4f3ef]/50 mb-2 block"
+            className="text-[9px] uppercase tracking-[0.3em] text-[var(--color-bellini-primary)]/50 mb-2 block"
           >
             Nuestras Disciplinas
           </motion.span>
@@ -28,7 +28,7 @@ export function Services() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="font-serif text-2xl md:text-4xl text-[var(--color-bellini-bone)] font-light"
+            className="font-serif text-2xl md:text-4xl text-[var(--color-bellini-primary)] font-light"
           >
             Intervenciones <span className="italic">especializadas.</span>
           </motion.h2>
@@ -58,7 +58,7 @@ export function Services() {
                 </p>
               </div>
               <div className="col-span-1 md:col-span-1 flex justify-end md:justify-center items-center opacity-0 group-hover:opacity-40 transition-opacity">
-                <div className="w-8 h-[1px] bg-[var(--color-bellini-bone)]"></div>
+                <div className="w-8 h-[1px] bg-[var(--color-bellini-primary)]"></div>
               </div>
             </motion.div>
           ))}

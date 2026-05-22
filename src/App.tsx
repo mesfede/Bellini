@@ -18,6 +18,33 @@ export default function App() {
   const [activeSection, setActiveSection] = useState('hero');
   const isTransitioning = useRef(false);
 
+  const [heroSubSlide, _setHeroSubSlide] = useState(0);
+  const heroSubSlideRef = useRef(0);
+  const lastNavWasWheelUp = useRef(false);
+
+  const setHeroSubSlide = (val: number | ((prev: number) => number)) => {
+    if (typeof val === 'function') {
+      _setHeroSubSlide(prev => {
+        const next = val(prev);
+        heroSubSlideRef.current = next;
+        return next;
+      });
+    } else {
+      _setHeroSubSlide(val);
+      heroSubSlideRef.current = val;
+    }
+  };
+
+  useEffect(() => {
+    if (activeSection === 'hero') {
+      if (!lastNavWasWheelUp.current) {
+        setHeroSubSlide(0);
+      }
+    } else {
+      lastNavWasWheelUp.current = false;
+    }
+  }, [activeSection]);
+
   const sections = ['hero', 'nosotros', 'casos', 'servicios', 'experiencia', 'contacto'];
 
   useEffect(() => {
@@ -26,6 +53,15 @@ export default function App() {
 
     // Convert mouse wheel events to seamless section transitions
     const handleWheel = (e: WheelEvent) => {
+      // Direct escape when any modal, modal-open class, or dialog is currently open
+      if (
+        document.body.classList.contains('modal-open') || 
+        document.querySelector('.modal-overlay') || 
+        document.querySelector('[role="dialog"]')
+      ) {
+        return; // Allow native, continuous vertical scrolling inside the open details panel
+      }
+
       // Ignore if vertical scrolling is negligible or if a transition is active
       if (Math.abs(e.deltaY) < 15 || isTransitioning.current) {
         if (isTransitioning.current) {
@@ -46,6 +82,53 @@ export default function App() {
       const viewportWidth = window.innerWidth;
       const currentIndex = Math.round(currentScrollLeft / viewportWidth);
 
+      // Scroll-driven Hero sub-slide management
+      if (currentIndex === 0) {
+        const currentHeroSlide = heroSubSlideRef.current;
+        if (e.deltaY > 0) {
+          // Scrolling down
+          if (currentHeroSlide < 2) {
+            isTransitioning.current = true;
+            setHeroSubSlide(prev => prev + 1);
+            setTimeout(() => {
+              isTransitioning.current = false;
+            }, 900);
+            return;
+          }
+        } else {
+          // Scrolling up
+          if (currentHeroSlide > 0) {
+            isTransitioning.current = true;
+            setHeroSubSlide(prev => prev - 1);
+            setTimeout(() => {
+              isTransitioning.current = false;
+            }, 900);
+            return;
+          }
+        }
+      }
+
+      // Intercept wheel up on Nosotros (index 1) to land on the 3rd sub-slide of Hero (index 2)
+      if (currentIndex === 1 && e.deltaY < 0) {
+        isTransitioning.current = true;
+        lastNavWasWheelUp.current = true;
+        setHeroSubSlide(2);
+        const targetElement = document.getElementById('hero');
+        if (targetElement) {
+          targetElement.scrollIntoView({
+            behavior: 'smooth',
+            inline: 'start',
+            block: 'nearest'
+          });
+          setTimeout(() => {
+            isTransitioning.current = false;
+          }, 900);
+        } else {
+          isTransitioning.current = false;
+        }
+        return;
+      }
+
       let targetIndex = currentIndex;
       if (e.deltaY > 0) {
         // Scroll down / scroll right
@@ -57,6 +140,9 @@ export default function App() {
 
       if (targetIndex !== currentIndex) {
         isTransitioning.current = true;
+        if (targetIndex !== 0) {
+          lastNavWasWheelUp.current = false;
+        }
         const targetElement = document.getElementById(sections[targetIndex]);
         
         if (targetElement) {
@@ -129,7 +215,7 @@ export default function App() {
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         <div id="hero" className="w-screen h-screen flex-shrink-0 snap-start">
-          <Hero />
+          <Hero activeSubSlide={heroSubSlide} />
         </div>
         <div id="nosotros" className="w-screen h-screen flex-shrink-0 snap-start">
           <About />

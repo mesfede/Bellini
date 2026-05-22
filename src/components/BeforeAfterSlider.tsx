@@ -38,7 +38,7 @@ export function BeforeAfterSlider({ beforeImage, afterImage }: BeforeAfterSlider
 
       {/* Before image (clipped) */}
       <div 
-        className="absolute inset-0 w-full h-full pointer-events-none border-r border-[#f4f3ef]/30"
+        className="absolute inset-0 w-full h-full pointer-events-none border-r border-[var(--color-bellini-primary)]/30"
         style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
       >
         <img 
