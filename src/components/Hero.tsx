@@ -28,17 +28,7 @@ const slideData = [
 
 export function Hero({ activeSubSlide = 0 }: HeroProps) {
   const currentSlide = activeSubSlide;
-  const [prevSlide, setPrevSlide] = useState(0);
-  const [direction, setDirection] = useState(1); // 1 for right (next), -1 for left (prev)
-
-  useEffect(() => {
-    if (activeSubSlide > prevSlide) {
-      setDirection(1);
-    } else if (activeSubSlide < prevSlide) {
-      setDirection(-1);
-    }
-    setPrevSlide(activeSubSlide);
-  }, [activeSubSlide, prevSlide]);
+  const direction = 1; // Constant direction so all slides consistently flow from right to left
 
   return (
     <section className="relative h-screen w-full flex flex-col justify-center items-center overflow-hidden bg-[#0a0a0a]">

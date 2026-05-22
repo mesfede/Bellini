@@ -11,16 +11,16 @@ export function Services() {
   ];
 
   return (
-    <section className="w-screen h-screen shrink-0 snap-start relative px-6 md:px-16 lg:px-24 py-16 md:py-24 flex flex-col justify-center bg-[#0a0a0a] overflow-hidden animate-fade-in">
+    <section className="w-screen h-screen shrink-0 snap-start relative px-6 md:px-16 lg:px-24 pt-28 md:pt-36 lg:pt-40 flex flex-col justify-start bg-[#0a0a0a] overflow-hidden animate-fade-in">
       <Watermark text="PRÁCTICA" className="top-1/4" />
 
       <div className="max-w-7xl mx-auto w-full">
-        <div className="text-center mb-8 md:mb-12">
+        <div className="text-center mb-6 md:mb-8 lg:mb-10 animate-slide-up">
           <motion.span 
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="text-[9px] uppercase tracking-[0.3em] text-[var(--color-bellini-primary)]/50 mb-2 block"
+            className="text-[9px] uppercase tracking-[0.3em] text-[var(--color-bellini-primary)]/50 mb-1.5 block"
           >
             Nuestras Disciplinas
           </motion.span>
@@ -28,7 +28,7 @@ export function Services() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="font-serif text-2xl md:text-4xl text-[var(--color-bellini-primary)] font-light"
+            className="font-serif text-2xl md:text-3xl lg:text-4xl text-[var(--color-bellini-primary)] font-light"
           >
             Intervenciones <span className="italic">especializadas.</span>
           </motion.h2>
@@ -42,7 +42,7 @@ export function Services() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, delay: index * 0.08 }}
-              className="group border-b border-white/10 py-4 md:py-6 lg:py-8 grid grid-cols-1 md:grid-cols-12 gap-2 items-start hover:bg-white/5 transition-colors duration-500 cursor-default px-6 -mx-6 md:px-10 md:-mx-10"
+              className="group border-b border-white/10 py-3 md:py-4 lg:py-5 grid grid-cols-1 md:grid-cols-12 gap-2 items-start hover:bg-white/5 transition-colors duration-500 cursor-default px-6 -mx-6 md:px-10 md:-mx-10"
             >
               <div className="col-span-1 md:col-span-1 text-[10px] text-[#f4f3ef]/45 font-serif mt-1">
                 0{index + 1}.
