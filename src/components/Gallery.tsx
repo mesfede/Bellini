@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { default as teethBefore } from '../assets/images/bellini_teeth_before_1779371123423.png';
-import { default as teethAfter } from '../assets/images/bellini_teeth_after_1779371142222.png';
-import { default as img4 } from '../assets/images/bellini_imagen (4).jpeg';
-import { default as img5 } from '../assets/images/bellini_imagen (5).jpeg';
-import { default as img7 } from '../assets/images/bellini_imagen (7).jpeg';
-import { default as img8 } from '../assets/images/bellini_imagen (13).jpeg';
-import { default as img9 } from '../assets/images/bellini_imagen (14).jpeg';
+import teethBefore from '../assets/images/bellini_teeth_before_1779371123423.png';
+import teethAfter from '../assets/images/bellini_teeth_after_1779371142222.png';
+import img4 from '../assets/images/bellini_imagen (4).jpeg';
+import img5 from '../assets/images/bellini_imagen (5).jpeg';
+import img7 from '../assets/images/bellini_imagen (7).jpeg';
+import img8 from '../assets/images/bellini_imagen (13).jpeg';
+import img9 from '../assets/images/bellini_imagen (14).jpeg';
 import { BeforeAfterSlider } from './BeforeAfterSlider';
 
 interface CaseDetail {

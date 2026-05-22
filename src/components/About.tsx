@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { default as portrait } from '../assets/images/bellini_imagen (2).jpeg';
+import portrait from '../assets/images/bellini_imagen (2).jpeg';
 import { Watermark } from './Watermark';
 
 export function About() {

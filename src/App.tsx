@@ -22,6 +22,20 @@ export default function App() {
   const heroSubSlideRef = useRef(0);
   const lastNavWasWheelUp = useRef(false);
 
+  // Lock system scroll of the body/window to (0,0) at all times.
+  // This completely eliminates horizontal/vertical viewport-drifts leading to black screens in Vercel.
+  useEffect(() => {
+    const handleViewportLock = () => {
+      if (window.scrollX !== 0 || window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
+    };
+    window.addEventListener('scroll', handleViewportLock, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleViewportLock);
+    };
+  }, []);
+
   const setHeroSubSlide = (val: number | ((prev: number) => number)) => {
     if (typeof val === 'function') {
       _setHeroSubSlide(prev => {
@@ -221,25 +235,25 @@ export default function App() {
       <div
         ref={containerRef}
         id="main-scroll-container"
-        className="flex flex-row overflow-x-auto overflow-y-hidden h-screen w-screen snap-x snap-mandatory scroll-smooth relative z-10 select-none scrollbar-none"
+        className="flex flex-row flex-nowrap overflow-x-auto overflow-y-hidden h-screen w-screen snap-x snap-mandatory scroll-smooth relative z-10 select-none scrollbar-none"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        <div id="hero" className="w-screen h-screen flex-shrink-0 snap-start">
+        <div id="hero" className="w-screen min-w-full h-screen flex-shrink-0 snap-start">
           <Hero activeSubSlide={heroSubSlide} />
         </div>
-        <div id="nosotros" className="w-screen h-screen flex-shrink-0 snap-start">
+        <div id="nosotros" className="w-screen min-w-full h-screen flex-shrink-0 snap-start">
           <About />
         </div>
-        <div id="casos" className="w-screen h-screen flex-shrink-0 snap-start">
+        <div id="casos" className="w-screen min-w-full h-screen flex-shrink-0 snap-start">
           <Gallery />
         </div>
-        <div id="servicios" className="w-screen h-screen flex-shrink-0 snap-start">
+        <div id="servicios" className="w-screen min-w-full h-screen flex-shrink-0 snap-start">
           <Services />
         </div>
-        <div id="experiencia" className="w-screen h-screen flex-shrink-0 snap-start">
+        <div id="experiencia" className="w-screen min-w-full h-screen flex-shrink-0 snap-start">
           <Experience />
         </div>
-        <div id="contacto" className="w-screen h-screen flex-shrink-0 snap-start">
+        <div id="contacto" className="w-screen min-w-full h-screen flex-shrink-0 snap-start">
           <Contact />
         </div>
       </div>

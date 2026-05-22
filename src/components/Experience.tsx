@@ -1,19 +1,19 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
-import { default as img3 } from '../assets/images/bellini_imagen (3).jpeg';
-import { default as img4 } from '../assets/images/bellini_imagen (4).jpeg';
-import { default as img5 } from '../assets/images/bellini_imagen (5).jpeg';
-import { default as img6 } from '../assets/images/bellini_imagen (6).jpeg';
-import { default as img7 } from '../assets/images/bellini_imagen (7).jpeg';
-import { default as img8 } from '../assets/images/bellini_imagen (8).jpeg';
-import { default as img9 } from '../assets/images/bellini_imagen (9).jpeg';
-import { default as img10 } from '../assets/images/bellini_imagen (10).jpeg';
-import { default as img11 } from '../assets/images/bellini_imagen (11).jpeg';
-import { default as img12 } from '../assets/images/bellini_imagen (12).jpeg';
-import { default as img13 } from '../assets/images/bellini_imagen (13).jpeg';
-import { default as img14 } from '../assets/images/bellini_imagen (14).jpeg';
-import { default as img15 } from '../assets/images/bellini_imagen (15).jpeg';
+import img3 from '../assets/images/bellini_imagen (3).jpeg';
+import img4 from '../assets/images/bellini_imagen (4).jpeg';
+import img5 from '../assets/images/bellini_imagen (5).jpeg';
+import img6 from '../assets/images/bellini_imagen (6).jpeg';
+import img7 from '../assets/images/bellini_imagen (7).jpeg';
+import img8 from '../assets/images/bellini_imagen (8).jpeg';
+import img9 from '../assets/images/bellini_imagen (9).jpeg';
+import img10 from '../assets/images/bellini_imagen (10).jpeg';
+import img11 from '../assets/images/bellini_imagen (11).jpeg';
+import img12 from '../assets/images/bellini_imagen (12).jpeg';
+import img13 from '../assets/images/bellini_imagen (13).jpeg';
+import img14 from '../assets/images/bellini_imagen (14).jpeg';
+import img15 from '../assets/images/bellini_imagen (15).jpeg';
 
 export function Experience() {
   const images = [img3, img4, img5, img6, img7, img8, img9, img10, img11, img12, img13, img14, img15];
