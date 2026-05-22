@@ -54,7 +54,13 @@ export function About() {
               href="#contacto" 
               onClick={(e) => {
                 e.preventDefault();
-                document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth', inline: 'start' });
+                const container = document.getElementById('main-scroll-container');
+                if (container) {
+                  container.scrollTo({
+                    left: 5 * container.clientWidth,
+                    behavior: 'smooth'
+                  });
+                }
               }}
               className="inline-flex items-center gap-4 text-[10px] uppercase tracking-[0.2em] text-[var(--color-bellini-bone)] hover:opacity-50 transition-opacity"
             >

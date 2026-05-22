@@ -78,8 +78,8 @@ export default function App() {
       e.preventDefault();
 
       // Find current index
+      const viewportWidth = container.clientWidth;
       const currentScrollLeft = container.scrollLeft;
-      const viewportWidth = window.innerWidth;
       const currentIndex = Math.round(currentScrollLeft / viewportWidth);
 
       // Scroll-driven Hero sub-slide management
@@ -113,19 +113,13 @@ export default function App() {
         isTransitioning.current = true;
         lastNavWasWheelUp.current = true;
         setHeroSubSlide(2);
-        const targetElement = document.getElementById('hero');
-        if (targetElement) {
-          targetElement.scrollIntoView({
-            behavior: 'smooth',
-            inline: 'start',
-            block: 'nearest'
-          });
-          setTimeout(() => {
-            isTransitioning.current = false;
-          }, 900);
-        } else {
+        container.scrollTo({
+          left: 0,
+          behavior: 'smooth'
+        });
+        setTimeout(() => {
           isTransitioning.current = false;
-        }
+        }, 900);
         return;
       }
 
@@ -143,22 +137,16 @@ export default function App() {
         if (targetIndex !== 0) {
           lastNavWasWheelUp.current = false;
         }
-        const targetElement = document.getElementById(sections[targetIndex]);
         
-        if (targetElement) {
-          targetElement.scrollIntoView({
-            behavior: 'smooth',
-            inline: 'start',
-            block: 'nearest'
-          });
+        container.scrollTo({
+          left: targetIndex * viewportWidth,
+          behavior: 'smooth'
+        });
 
-          // Throttle next trigger until transition completes for high-end feel
-          setTimeout(() => {
-            isTransitioning.current = false;
-          }, 850);
-        } else {
+        // Throttle next trigger until transition completes for high-end feel
+        setTimeout(() => {
           isTransitioning.current = false;
-        }
+        }, 850);
       }
     };
 
@@ -169,7 +157,7 @@ export default function App() {
         setScrollProgress((container.scrollLeft / scrollWidth) * 100);
       }
 
-      const viewportWidth = window.innerWidth;
+      const viewportWidth = container.clientWidth;
       const currentScrollLeft = container.scrollLeft;
 
       const currentIndex = Math.round(currentScrollLeft / viewportWidth);
@@ -193,7 +181,7 @@ export default function App() {
   const navigateHorizontal = (direction: 'next' | 'prev') => {
     const container = containerRef.current;
     if (!container) return;
-    const scrollAmount = window.innerWidth;
+    const scrollAmount = container.clientWidth;
     container.scrollBy({
       left: direction === 'next' ? scrollAmount : -scrollAmount,
       behavior: 'smooth'
@@ -211,6 +199,7 @@ export default function App() {
       {/* Main Horizontal Snapping Container */}
       <div
         ref={containerRef}
+        id="main-scroll-container"
         className="flex flex-row overflow-x-auto overflow-y-hidden h-screen w-screen snap-x snap-mandatory scroll-smooth relative z-10 select-none scrollbar-none"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >

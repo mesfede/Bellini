@@ -400,7 +400,13 @@ export function Gallery() {
                       e.stopPropagation();
                       setSelectedCase(null);
                       setIsArchiveOpen(false);
-                      document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth', inline: 'start' });
+                      const container = document.getElementById('main-scroll-container');
+                      if (container) {
+                        container.scrollTo({
+                          left: 5 * container.clientWidth,
+                          behavior: 'smooth'
+                        });
+                      }
                     }}
                     className="w-full sm:w-auto text-[9.5px] uppercase tracking-[0.2em] bg-[var(--color-bellini-primary)] text-[#0a0a0a] px-5 py-3 rounded hover:bg-[#fff] transition-all font-semibold cursor-pointer pointer-events-auto border-none"
                   >

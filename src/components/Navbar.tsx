@@ -22,13 +22,16 @@ export function Navbar({ activeSection = 'hero' }: NavbarProps) {
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     e.preventDefault();
     setIsOpen(false);
-    const element = document.getElementById(targetId);
-    if (element) {
-      element.scrollIntoView({
-        behavior: 'smooth',
-        inline: 'start',
-        block: 'nearest'
-      });
+    const container = document.getElementById('main-scroll-container');
+    if (container) {
+      const sections = ['hero', 'nosotros', 'casos', 'servicios', 'experiencia', 'contacto'];
+      const index = sections.indexOf(targetId);
+      if (index !== -1) {
+        container.scrollTo({
+          left: index * container.clientWidth,
+          behavior: 'smooth'
+        });
+      }
     }
   };
 
@@ -42,7 +45,13 @@ export function Navbar({ activeSection = 'hero' }: NavbarProps) {
           href="#" 
           onClick={(e) => {
             e.preventDefault();
-            document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth', inline: 'start' });
+            const container = document.getElementById('main-scroll-container');
+            if (container) {
+              container.scrollTo({
+                left: 0,
+                behavior: 'smooth'
+              });
+            }
           }}
           className="flex flex-col items-center z-50 transition-opacity hover:opacity-75 animate-fade-in"
         >
