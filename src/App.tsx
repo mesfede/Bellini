@@ -48,6 +48,25 @@ export default function App() {
   const sections = ['hero', 'nosotros', 'casos', 'servicios', 'experiencia', 'contacto'];
 
   useEffect(() => {
+    const handleNavScroll = (e: Event) => {
+      isTransitioning.current = true;
+      const customEvent = e as CustomEvent;
+      const targetIdx = customEvent.detail?.targetIndex;
+      if (targetIdx === 0) {
+        setHeroSubSlide(0);
+      }
+      setTimeout(() => {
+        isTransitioning.current = false;
+      }, 1100);
+    };
+
+    window.addEventListener('nav-scroll-start', handleNavScroll);
+    return () => {
+      window.removeEventListener('nav-scroll-start', handleNavScroll);
+    };
+  }, []);
+
+  useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
@@ -63,7 +82,7 @@ export default function App() {
       }
 
       // Ignore if vertical scrolling is negligible or if a transition is active
-      if (Math.abs(e.deltaY) < 15 || isTransitioning.current) {
+      if (Math.abs(e.deltaY) < 25 || isTransitioning.current) {
         if (isTransitioning.current) {
           e.preventDefault();
         }
@@ -80,7 +99,8 @@ export default function App() {
       // Find current index
       const viewportWidth = container.clientWidth;
       const currentScrollLeft = container.scrollLeft;
-      const currentIndex = Math.round(currentScrollLeft / viewportWidth);
+      const rawIndex = Math.round(currentScrollLeft / viewportWidth);
+      const currentIndex = Math.max(0, Math.min(rawIndex, sections.length - 1));
 
       // Scroll-driven Hero sub-slide management
       if (currentIndex === 0) {
@@ -92,7 +112,7 @@ export default function App() {
             setHeroSubSlide(prev => prev + 1);
             setTimeout(() => {
               isTransitioning.current = false;
-            }, 900);
+            }, 1100);
             return;
           }
         } else {
@@ -102,7 +122,7 @@ export default function App() {
             setHeroSubSlide(prev => prev - 1);
             setTimeout(() => {
               isTransitioning.current = false;
-            }, 900);
+            }, 1100);
             return;
           }
         }
@@ -119,7 +139,7 @@ export default function App() {
         });
         setTimeout(() => {
           isTransitioning.current = false;
-        }, 900);
+        }, 1100);
         return;
       }
 
@@ -146,7 +166,7 @@ export default function App() {
         // Throttle next trigger until transition completes for high-end feel
         setTimeout(() => {
           isTransitioning.current = false;
-        }, 850);
+        }, 1100);
       }
     };
 
@@ -160,7 +180,8 @@ export default function App() {
       const viewportWidth = container.clientWidth;
       const currentScrollLeft = container.scrollLeft;
 
-      const currentIndex = Math.round(currentScrollLeft / viewportWidth);
+      const rawIndex = Math.round(currentScrollLeft / viewportWidth);
+      const currentIndex = Math.max(0, Math.min(rawIndex, sections.length - 1));
       if (sections[currentIndex]) {
         setActiveSection(sections[currentIndex]);
       }

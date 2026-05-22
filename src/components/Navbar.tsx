@@ -27,6 +27,7 @@ export function Navbar({ activeSection = 'hero' }: NavbarProps) {
       const sections = ['hero', 'nosotros', 'casos', 'servicios', 'experiencia', 'contacto'];
       const index = sections.indexOf(targetId);
       if (index !== -1) {
+        window.dispatchEvent(new CustomEvent('nav-scroll-start', { detail: { targetIndex: index } }));
         container.scrollTo({
           left: index * container.clientWidth,
           behavior: 'smooth'
@@ -47,6 +48,7 @@ export function Navbar({ activeSection = 'hero' }: NavbarProps) {
             e.preventDefault();
             const container = document.getElementById('main-scroll-container');
             if (container) {
+              window.dispatchEvent(new CustomEvent('nav-scroll-start', { detail: { targetIndex: 0 } }));
               container.scrollTo({
                 left: 0,
                 behavior: 'smooth'

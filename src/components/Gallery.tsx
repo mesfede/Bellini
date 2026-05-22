@@ -402,6 +402,7 @@ export function Gallery() {
                       setIsArchiveOpen(false);
                       const container = document.getElementById('main-scroll-container');
                       if (container) {
+                        window.dispatchEvent(new CustomEvent('nav-scroll-start', { detail: { targetIndex: 5 } }));
                         container.scrollTo({
                           left: 5 * container.clientWidth,
                           behavior: 'smooth'
