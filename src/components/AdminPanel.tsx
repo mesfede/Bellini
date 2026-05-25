@@ -27,6 +27,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { db, auth, loginWithGoogle, logout, OperationType, handleFirestoreError } from '../lib/firebase';
+import { resolveClinicalImagePath } from '../lib/imageResolver';
 
 // Interfaces matching firebase-blueprint.json Schema
 export interface ClinicalCase {
@@ -795,7 +796,7 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
                               {beforeImg.trim() !== '' && (
                                 <div className="mt-2 aspect-[16/10] overflow-hidden rounded border border-[#222] relative bg-black/60 flex items-center justify-center">
                                   <img 
-                                    src={beforeImg} 
+                                    src={resolveClinicalImagePath(beforeImg)} 
                                     className="max-w-full max-h-full object-contain" 
                                     onError={(e) => { (e.target as any).style.display = 'none'; }}
                                     onLoad={(e) => { (e.target as any).style.display = 'block'; }}
@@ -820,7 +821,7 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
                               {afterImg.trim() !== '' && (
                                 <div className="mt-2 aspect-[16/10] overflow-hidden rounded border border-[#222] relative bg-black/60 flex items-center justify-center">
                                   <img 
-                                    src={afterImg} 
+                                    src={resolveClinicalImagePath(afterImg)} 
                                     className="max-w-full max-h-full object-contain" 
                                     onError={(e) => { (e.target as any).style.display = 'none'; }}
                                     onLoad={(e) => { (e.target as any).style.display = 'block'; }}
@@ -846,7 +847,7 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
                             {afterImg.trim() !== '' && (
                               <div className="mt-2 max-w-sm aspect-[16/10] overflow-hidden rounded border border-[#222] relative bg-black/60 flex items-center justify-center mx-auto">
                                 <img 
-                                  src={afterImg} 
+                                  src={resolveClinicalImagePath(afterImg)} 
                                   className="max-w-full max-h-full object-contain" 
                                   onError={(e) => { (e.target as any).style.display = 'none'; }}
                                   onLoad={(e) => { (e.target as any).style.display = 'block'; }}
@@ -910,7 +911,7 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
                                 {url.trim() !== '' && (
                                   <div className="h-14 w-20 overflow-hidden rounded border border-[#222] bg-black/60 flex items-center justify-center">
                                     <img 
-                                      src={url} 
+                                      src={resolveClinicalImagePath(url)} 
                                       className="max-w-full max-h-full object-contain" 
                                       onError={(e) => { (e.target as any).style.display = 'none'; }}
                                       onLoad={(e) => { (e.target as any).style.display = 'block'; }}

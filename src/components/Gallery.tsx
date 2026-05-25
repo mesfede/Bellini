@@ -9,6 +9,7 @@ import belliniFoto1 from '../assets/images/bellini_foto01.jpg';
 import belliniFoto2 from '../assets/images/bellini_foto02.jpg';
 import belliniFoto3 from '../assets/images/bellini_foto03.jpg';
 import { BeforeAfterSlider } from './BeforeAfterSlider';
+import { resolveClinicalImagePath } from '../lib/imageResolver';
 
 const STATIC_FALLBACK_CASES = [
   {
@@ -159,8 +160,8 @@ export function Gallery() {
                 <>
                   {/* Overlapped before-after images with pure hover slide reveal */}
                   <BeforeAfterSlider 
-                    beforeImage={activeCase.beforeImg} 
-                    afterImage={activeCase.afterImg} 
+                    beforeImage={resolveClinicalImagePath(activeCase.beforeImg)} 
+                    afterImage={resolveClinicalImagePath(activeCase.afterImg)} 
                   />
                   <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center pointer-events-none select-none">
                     <span className="bg-[#0a0a0a]/90 text-[8.5px] uppercase tracking-[0.15em] text-[var(--color-bellini-primary)] py-1.5 px-3 rounded border border-white/5 shadow-md">
@@ -171,7 +172,7 @@ export function Gallery() {
               ) : (
                 <div className="w-full h-full flex items-center justify-center relative bg-[#060606] group cursor-default">
                   <img 
-                    src={activeCase.afterImg} 
+                    src={resolveClinicalImagePath(activeCase.afterImg)} 
                     alt={activeCase.name} 
                     className="max-w-full max-h-full object-contain filter grayscale hover:grayscale-0 transition-all duration-700 pointer-events-auto"
                     referrerPolicy="no-referrer"
@@ -199,11 +200,11 @@ export function Gallery() {
                   {activeCase.galleryImages.map((imgUrl: string, stepIdx: number) => (
                     <div 
                       key={stepIdx}
-                      onClick={() => setActiveLightboxImg(imgUrl)}
+                      onClick={() => setActiveLightboxImg(resolveClinicalImagePath(imgUrl))}
                       className="group relative aspect-[14/9] bg-[#0c0c0c] border border-[#222] rounded overflow-hidden cursor-zoom-in transition-all duration-300 hover:border-[var(--color-bellini-primary)]/45 pointer-events-auto"
                     >
                       <img 
-                        src={imgUrl} 
+                        src={resolveClinicalImagePath(imgUrl)} 
                         alt={`Secuencia clínica ${stepIdx + 1}`}
                         className="w-full h-full object-cover filter grayscale hover:grayscale-0 transition-transform duration-500 group-hover:scale-105"
                         referrerPolicy="no-referrer"
@@ -406,7 +407,7 @@ export function Gallery() {
                         {c.afterImg && (
                           <div className="w-12 h-12 rounded-lg overflow-hidden border border-[#cbc6bc] bg-black/5 shrink-0 self-center">
                             <img 
-                              src={c.afterImg} 
+                              src={resolveClinicalImagePath(c.afterImg)} 
                               alt={c.name} 
                               className="w-full h-full object-cover filter transition-all duration-500"
                               referrerPolicy="no-referrer"
@@ -483,7 +484,7 @@ export function Gallery() {
                   {/* Left panel: Clinical Image */}
                   <div className="flex-grow md:w-3/5 bg-black flex items-center justify-center p-4 relative group">
                     <img 
-                      src={activeLightboxImg} 
+                      src={resolveClinicalImagePath(activeLightboxImg || '')} 
                       alt="Registro clínico de laboratorio" 
                       className="max-w-full max-h-[50vh] md:max-h-[70vh] object-contain rounded-lg shadow-lg border border-white/5"
                       referrerPolicy="no-referrer"
