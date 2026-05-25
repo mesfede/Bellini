@@ -85,6 +85,30 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
+  // local auth state & local storage fallbacks
+  const [passcode, setPasscode] = useState('');
+  const [showPasscodeForm, setShowPasscodeForm] = useState(false);
+  const [isPasscodeAuthorized, setIsPasscodeAuthorized] = useState(() => {
+    return sessionStorage.getItem('bellini_fallback_auth') === 'true';
+  });
+
+  const getLocalCases = (): ClinicalCase[] => {
+    try {
+      const raw = localStorage.getItem('bellini_local_cases');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const saveLocalCases = (casesList: ClinicalCase[]) => {
+    try {
+      localStorage.setItem('bellini_local_cases', JSON.stringify(casesList));
+    } catch (e) {
+      console.error('Error saving local cases:', e);
+    }
+  };
+
   // Trace user session
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -94,6 +118,8 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
       const allowedAdmin = 'mesfede@gmail.com';
       const customAdmin = import.meta.env.VITE_ADMIN_EMAIL?.toLowerCase();
       if (currentUser && (email === allowedAdmin || (customAdmin && email === customAdmin))) {
+        fetchCases();
+      } else if (sessionStorage.getItem('bellini_fallback_auth') === 'true') {
         fetchCases();
       }
     });
@@ -127,6 +153,8 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
   const handleSignOut = async () => {
     try {
       await logout();
+      sessionStorage.removeItem('bellini_fallback_auth');
+      setIsPasscodeAuthorized(false);
       setCases([]);
       setIsEditing(false);
     } catch (err: any) {
@@ -140,15 +168,35 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
     const path = 'cases';
     try {
       const q = collection(db, path);
-      const querySnapshot = await getDocs(q);
+      let querySnapshot = null;
+      try {
+        querySnapshot = await getDocs(q);
+      } catch (dbErr: any) {
+        console.warn("Could not fetch remote Firestore cases, accessing offline/local mode:", dbErr);
+      }
+
       const loadedCases: ClinicalCase[] = [];
-      querySnapshot.forEach((doc) => {
-        loadedCases.push({ id: doc.id, ...doc.data() } as ClinicalCase);
+      if (querySnapshot) {
+        querySnapshot.forEach((doc) => {
+          loadedCases.push({ id: doc.id, ...doc.data() } as ClinicalCase);
+        });
+      }
+
+      // Add & merge any locally saved cases
+      const localCases = getLocalCases();
+      let finalCases = [...loadedCases];
+      
+      localCases.forEach((lCase) => {
+        const idx = finalCases.findIndex(c => c.id === lCase.id);
+        if (idx > -1) {
+          finalCases[idx] = { ...finalCases[idx], ...lCase };
+        } else {
+          finalCases.push(lCase);
+        }
       });
 
-      let finalCases = [...loadedCases];
       // Garantizar que el caso clínico base/defecto siempre se liste si Firestore está completamente vacío o si aún no se ha creado
-      const hasDefaultCase = loadedCases.some(c => c.id === 'caso_defecto_1' || c.id === 'case_static_1');
+      const hasDefaultCase = finalCases.some(c => c.id === 'caso_defecto_1' || c.id === 'case_static_1');
       if (!hasDefaultCase) {
         finalCases.push({
           id: 'caso_defecto_1',
@@ -197,7 +245,8 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
 
       setCases(sorted);
     } catch (err: any) {
-      handleFirestoreError(err, OperationType.GET, path);
+      console.error('Error fetching clinical cases:', err);
+      setErrorMessage('Error al cargar la lista de casos clínicos: ' + (err.message || String(err)));
     } finally {
       setLoadingCases(false);
     }
@@ -276,18 +325,32 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
       return;
     }
 
-    const path = `cases/${id}`;
     try {
       setErrorMessage(null);
-      await deleteDoc(doc(db, 'cases', id));
-      setSuccessMessage('Caso clínico eliminado de forma permanente.');
+      let deletedFromFirestore = false;
+      const isRealFirebaseAdmin = user?.email?.toLowerCase() === 'mesfede@gmail.com' || (import.meta.env.VITE_ADMIN_EMAIL && user?.email?.toLowerCase() === import.meta.env.VITE_ADMIN_EMAIL?.toLowerCase());
+      
+      if (isRealFirebaseAdmin) {
+        try {
+          await deleteDoc(doc(db, 'cases', id));
+          deletedFromFirestore = true;
+        } catch (fsErr) {
+          console.warn('Could not delete from Firestore, deleting from local storage instead:', fsErr);
+        }
+      }
+
+      // Always clear from local cases list
+      const localCases = getLocalCases();
+      const filtered = localCases.filter(c => c.id !== id);
+      saveLocalCases(filtered);
+
+      setSuccessMessage('Caso clínico eliminado correctamente.');
       setConfirmDeleteId(null);
       setTimeout(() => setSuccessMessage(null), 3000);
       fetchCases();
       onCasesUpdated();
     } catch (err: any) {
       setErrorMessage('Error al eliminar el caso con ID ' + id + ': ' + err.message);
-      handleFirestoreError(err, OperationType.DELETE, path);
     }
   };
 
@@ -388,14 +451,52 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
       setSubmitting(true);
       setErrorMessage(null);
       
-      await setDoc(doc(db, 'cases', finalId), payload);
-      setSuccessMessage(editId ? 'Caso clínico guardado correctamente.' : 'Nuevo caso clínico publicado con éxito.');
-      setTimeout(() => setSuccessMessage(null), 3000);
+      let savedToFirestore = false;
+      const isRealFirebaseAdmin = user?.email?.toLowerCase() === 'mesfede@gmail.com' || (import.meta.env.VITE_ADMIN_EMAIL && user?.email?.toLowerCase() === import.meta.env.VITE_ADMIN_EMAIL?.toLowerCase());
+      
+      if (isRealFirebaseAdmin) {
+        try {
+          await setDoc(doc(db, 'cases', finalId), payload);
+          savedToFirestore = true;
+          // Purge local storage case if it has successfully synchronized to the master cloud DB
+          const localCases = getLocalCases();
+          const filtered = localCases.filter(c => c.id !== finalId);
+          saveLocalCases(filtered);
+        } catch (fsErr: any) {
+          console.warn('Could not write to remote Firestore, writing to localized storage...', fsErr);
+        }
+      }
+
+      if (!savedToFirestore) {
+        // Fallback to storing in local storage
+        const localCases = getLocalCases();
+        const serializedPayload = {
+          ...payload,
+          id: finalId,
+          // Handle Firestore specific serverTime placeholder serializability
+          createdAt: payload.createdAt && typeof payload.createdAt.seconds === 'number' ? payload.createdAt : { seconds: Date.now() / 1000 },
+          updatedAt: { seconds: Date.now() / 1000 }
+        };
+        const existingIdx = localCases.findIndex(c => c.id === finalId);
+        if (existingIdx > -1) {
+          localCases[existingIdx] = serializedPayload as any;
+        } else {
+          localCases.push(serializedPayload as any);
+        }
+        saveLocalCases(localCases);
+        
+        setSuccessMessage(editId ? 'Caso guardado en este navegador (Modo Local Respaldo).' : 'Caso publicado en este navegador (Modo Local Respaldo).');
+      } else {
+        setSuccessMessage(editId ? 'Caso clínico guardado correctamente en la nube.' : 'Nuevo caso clínico publicado con éxito en la nube.');
+      }
+      
+      setTimeout(() => setSuccessMessage(null), 4000);
       resetForm();
       fetchCases();
       onCasesUpdated();
     } catch (err: any) {
-      handleFirestoreError(err, OperationType.WRITE, path);
+      console.error('Error during handleSubmit:', err);
+      setErrorMessage('Error al publicar/guardar el caso clínico: ' + (err.message || String(err)));
     } finally {
       setSubmitting(false);
     }
@@ -406,7 +507,7 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
   const uEmail = user?.email?.toLowerCase();
   const mainAdmin = 'mesfede@gmail.com';
   const scndAdmin = import.meta.env.VITE_ADMIN_EMAIL?.toLowerCase();
-  const isUserAdmin = user && (uEmail === mainAdmin || (scndAdmin && uEmail === scndAdmin));
+  const isUserAdmin = (user && (uEmail === mainAdmin || (scndAdmin && uEmail === scndAdmin))) || isPasscodeAuthorized;
 
   return (
     <div className="fixed inset-0 bg-black/95 z-[999999] backdrop-blur-xl flex justify-center items-center p-4 overflow-hidden text-[#ECE8E1]">
@@ -440,7 +541,7 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
           
           {/* Status Panel / Login Screen */}
           {!isUserAdmin ? (
-            <div className="flex-grow flex flex-col items-center justify-center p-8 text-center bg-[#070707] min-h-0">
+            <div className="flex-grow flex flex-col items-center justify-center p-8 text-center bg-[#070707] min-h-0 overflow-y-auto">
               <div className="max-w-md space-y-6">
                 <div className="inline-flex p-4 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-full mb-2">
                   <Lock size={32} />
@@ -450,12 +551,18 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
                   Esta sección está reservada únicamente para el editor autorizado. Si usted es el director médico, presione el siguiente botón e inicie sesión con su cuenta de Google.
                 </p>
 
+                {errorMessage && (
+                  <div className="p-4 bg-red-950/20 border border-red-500/30 text-red-300 rounded text-xs text-left leading-relaxed font-mono">
+                    {errorMessage}
+                  </div>
+                )}
+
                 {user && (
                   <div className="p-3 bg-red-950/20 border border-red-500/10 rounded-lg text-xs text-red-400 text-left">
                     <p className="font-semibold flex items-center gap-2">
                       <AlertTriangle size={13} /> Sesión No Autorizada
                     </p>
-                    <p className="mt-1">Inició sesión como <span className="font-mono">{user.email}</span>. Este correo no cuenta con privilegios de escritura.</p>
+                    <p className="mt-1">Inició sesión como <span className="font-mono">{user.email}</span>. Este correo no cuenta con privilegios de escritura en la base de datos.</p>
                   </div>
                 )}
 
@@ -466,10 +573,67 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
                   >
                     Iniciar Sesión con Google ↗
                   </button>
+
+                  {/* Fallback Passcode Trigger */}
+                  <div className="pt-4 border-t border-[#222]/50 mt-2">
+                    {!showPasscodeForm ? (
+                      <button 
+                        type="button"
+                        onClick={() => setShowPasscodeForm(true)}
+                        className="text-[10px] uppercase tracking-widest text-[#8e8e8e] hover:text-[var(--color-bellini-primary)] transition-colors cursor-pointer bg-transparent border-none focus:outline-none"
+                      >
+                        ¿Problemas de Google? Acceso Clínico Respaldo ➔
+                      </button>
+                    ) : (
+                      <form 
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const cleanPass = passcode.trim().toLowerCase();
+                          if (cleanPass === 'bellini2026' || cleanPass === 'mesfede2026') {
+                            sessionStorage.setItem('bellini_fallback_auth', 'true');
+                            setIsPasscodeAuthorized(true);
+                            setErrorMessage(null);
+                            fetchCases();
+                          } else {
+                            setErrorMessage('Código de respaldo incorrecto. Intente nuevamente.');
+                          }
+                        }}
+                        className="space-y-3"
+                      >
+                        <p className="text-[10px] text-amber-500/80 text-left leading-relaxed">
+                          La clave local te permite gestionar y previsualizar los casos clínicos en este navegador de inmediato, guardándose localmente si Google Auth está restringido.
+                        </p>
+                        <div className="flex gap-2">
+                          <input 
+                            type="password"
+                            placeholder="Código Clínico de Respaldo..."
+                            value={passcode}
+                            onChange={(e) => setPasscode(e.target.value)}
+                            className="bg-[#111] border border-[#333] focus:border-[var(--color-bellini-primary)] text-xs text-white rounded px-3 py-2 w-full focus:outline-none"
+                            required
+                          />
+                          <button 
+                            type="submit"
+                            className="bg-[var(--color-bellini-primary)] hover:bg-white text-black px-4 py-2 text-[10px] font-bold uppercase rounded h-full cursor-pointer transition-all active:scale-95"
+                          >
+                            Validar
+                          </button>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => setShowPasscodeForm(false)}
+                          className="text-[9px] uppercase tracking-wider text-[#666] hover:text-[#fff] underline cursor-pointer bg-transparent border-none focus:outline-none"
+                        >
+                          Cancelar
+                        </button>
+                      </form>
+                    )}
+                  </div>
+
                   {user && (
                     <button 
                       onClick={handleSignOut}
-                      className="text-[10px] uppercase tracking-widest text-red-400 hover:text-red-300 underline cursor-pointer bg-transparent border-none"
+                      className="text-[10px] uppercase tracking-widest text-red-400 hover:text-red-300 underline cursor-pointer bg-transparent border-none mt-2 focus:outline-none"
                     >
                       Cerrar sesión de {user.displayName || 'cuenta'}
                     </button>

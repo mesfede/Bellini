@@ -40,15 +40,40 @@ export function Gallery() {
   const fetchDbCases = async () => {
     try {
       const q = collection(db, 'cases');
-      const querySnapshot = await getDocs(q);
-      const loaded: any[] = [];
-      querySnapshot.forEach((doc) => {
-        loaded.push({ id: doc.id, ...doc.data() });
+      let loaded: any[] = [];
+      try {
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc) => {
+          loaded.push({ id: doc.id, ...doc.data() });
+        });
+      } catch (dbErr) {
+        console.warn("Could not fetch remote Firestore cases, accessing offline/local mode:", dbErr);
+      }
+
+      // Read local storage cases as well
+      const getLocalCases = (): any[] => {
+        try {
+          const raw = localStorage.getItem('bellini_local_cases');
+          return raw ? JSON.parse(raw) : [];
+        } catch {
+          return [];
+        }
+      };
+
+      const localCases = getLocalCases();
+      let finalCases = [...loaded];
+      
+      localCases.forEach((lCase) => {
+        const idx = finalCases.findIndex(c => c.id === lCase.id);
+        if (idx > -1) {
+          finalCases[idx] = { ...finalCases[idx], ...lCase };
+        } else {
+          finalCases.push(lCase);
+        }
       });
 
-      let finalCases = [...loaded];
-      const hasDefaultCase = loaded.some((c: any) => c.id === 'caso_defecto_1' || c.id === 'case_static_1' || c.id === 'default_1');
-      if (loaded.length > 0 && !hasDefaultCase) {
+      const hasDefaultCase = finalCases.some((c: any) => c.id === 'caso_defecto_1' || c.id === 'case_static_1' || c.id === 'default_1');
+      if (finalCases.length > 0 && !hasDefaultCase) {
         finalCases.push({
           ...STATIC_FALLBACK_CASES[0],
           orderIndex: 99
