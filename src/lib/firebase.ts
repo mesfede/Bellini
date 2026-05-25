@@ -1,7 +1,17 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+
+const firebaseConfig = {
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "uplifted-program-jpnh2",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:468327137002:web:d8c9007cc66d19c6c8e193",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDlSoxYZN4wsEbHtQxBxx4YyXogYqbH_6U",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "uplifted-program-jpnh2.firebaseapp.com",
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || "ai-studio-981e4bba-0997-4e5d-96b6-6d1079f0c6d3",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "uplifted-program-jpnh2.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "468327137002",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || ""
+};
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId); /* CRITICAL: The app will break without this line */
