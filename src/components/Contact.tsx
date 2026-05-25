@@ -1,4 +1,6 @@
 import { motion } from 'motion/react';
+import { Lock } from 'lucide-react';
+
 
 export function Contact() {
   return (
@@ -84,8 +86,20 @@ export function Contact() {
 
         {/* Integrated Luxury Editorial Footer */}
         <div className="w-full border-t border-[#222] pt-6 flex flex-col md:flex-row justify-between items-center text-[9px] uppercase tracking-[0.2em] text-[#555] gap-4">
-          <div>© {new Date().getFullYear()} Bellini Dental Studio.</div>
+          <div className="flex items-center gap-1">
+            <span>© {new Date().getFullYear()} Bellini Dental Studio.</span>
+            <button 
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('bellini-open-admin'));
+              }}
+              className="opacity-[0.03] hover:opacity-80 transition-opacity ml-1 bg-transparent border-none text-[#ECE8E1] cursor-pointer"
+              title=""
+            >
+              <Lock size={9} />
+            </button>
+          </div>
           <div className="flex flex-col items-center">
+
             <span className="text-[12px] md:text-[14px] tracking-[0.25em] font-serif uppercase text-[var(--color-bellini-primary)]">
               Bellini
             </span>

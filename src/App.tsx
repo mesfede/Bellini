@@ -11,8 +11,23 @@ import { Services } from '@/src/components/Services';
 import { Gallery } from '@/src/components/Gallery';
 import { Experience } from '@/src/components/Experience';
 import { Contact } from '@/src/components/Contact';
+import { AdminPanel } from '@/src/components/AdminPanel';
+
 
 export default function App() {
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+
+  // Monitor event cues requesting to open the administrative terminal
+  useEffect(() => {
+    const handleOpenAdmin = () => {
+      setIsAdminOpen(true);
+    };
+    window.addEventListener('bellini-open-admin', handleOpenAdmin);
+    return () => {
+      window.removeEventListener('bellini-open-admin', handleOpenAdmin);
+    };
+  }, []);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [activeSection, setActiveSection] = useState('hero');
@@ -86,6 +101,15 @@ export default function App() {
 
     // Convert mouse wheel events to seamless section transitions
     const handleWheel = (e: WheelEvent) => {
+      // Direct escape when scrolling inside any custom scrollbar/overflow container
+      const targetElement = e.target as HTMLElement;
+      if (targetElement) {
+        const scrollContainer = targetElement.closest('.overflow-y-auto, .custom-scrollbar') as HTMLElement;
+        if (scrollContainer && scrollContainer.scrollHeight > scrollContainer.clientHeight) {
+          return; // Allow native mouse wheel scrolling inside the element
+        }
+      }
+
       // Direct escape when any modal, modal-open class, or dialog is currently open
       if (
         document.body.classList.contains('modal-open') || 
@@ -282,6 +306,16 @@ export default function App() {
           {activeSection === 'contacto' && 'Sesión'}
         </div>
       </div>
+
+      {/* Behind the scenes clinical database editing console */}
+      <AdminPanel 
+        isOpen={isAdminOpen} 
+        onClose={() => setIsAdminOpen(false)} 
+        onCasesUpdated={() => {
+          // Push event notifying the gallery that live datasets have changed
+          window.dispatchEvent(new CustomEvent('bellini-cases-updated'));
+        }} 
+      />
     </div>
   );
 }

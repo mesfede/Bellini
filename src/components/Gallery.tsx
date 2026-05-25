@@ -1,405 +1,441 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
+import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import teethBefore from '../assets/images/bellini_teeth_before_1779371123423.png';
 import teethAfter from '../assets/images/bellini_teeth_after_1779371142222.png';
-import img4 from '../assets/images/bellini_imagen (4).jpeg';
-import img5 from '../assets/images/bellini_imagen (5).jpeg';
-import img7 from '../assets/images/bellini_imagen (7).jpeg';
-import img8 from '../assets/images/bellini_imagen (13).jpeg';
-import img9 from '../assets/images/bellini_imagen (14).jpeg';
+import belliniFoto1 from '../assets/images/bellini_foto01.jpg';
+import belliniFoto2 from '../assets/images/bellini_foto02.jpg';
+import belliniFoto3 from '../assets/images/bellini_foto03.jpg';
 import { BeforeAfterSlider } from './BeforeAfterSlider';
 
-interface CaseDetail {
-  id: string;
-  name: string;
-  desc: string;
-  challenge: string;
-  solution: string;
-  material: string;
-  duration: string;
-  thumbnail: string;
-  beforeImg: string;
-  afterImg: string;
-  doctorNotes?: string;
-}
+const STATIC_FALLBACK_CASES = [
+  {
+    id: 'case_static_1',
+    category: 'Reconstrucción Dental Anterior de Alta Complejidad',
+    tabLabel: 'Caso Principal 01',
+    name: 'Reconstrucción Dental Anterior de Alta Complejidad',
+    desc: 'Restauración biomimética de la arquitectura adamantina mediante microcarillas cerámicas de preparación nula.',
+    challenge: 'Paciente presenta un severo desgaste erosivo incisal, desmineralización en el esmalte cervical y diastemas dispersos. Esta pérdida de soporte generaba fatiga biomecánica y sensibilidad constante.',
+    solution: 'Se elaboró un plan de adición mínimamente invasivo sin tallar dientes. Se cementaron microcarillas cerámicas sinterizadas imitando las propiedades prismáticas, refractarias y el halo opalescente natural de los dientes.',
+    material: 'Porcelana refractaria artesanal (0.3mm)',
+    duration: '2 citas (Diseño + Adhesión)',
+    beforeImg: teethBefore,
+    afterImg: teethAfter,
+    galleryImages: [belliniFoto1, belliniFoto2, belliniFoto3],
+    doctorNotes: 'El objetivo prioritario fue restablecer la guía anterior y proteger la articulación temporomandibular mediante una adición aditiva, respetando el tejido biológico sano del paciente.'
+  }
+];
 
 export function Gallery() {
-  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
-  const [selectedCase, setSelectedCase] = useState<CaseDetail | null>(null);
+  const [activeLightboxImg, setActiveLightboxImg] = useState<string | null>(null);
+  const [showFutureCasesModal, setShowFutureCasesModal] = useState(false);
   const [mounted, setMounted] = useState(false);
+  
+  const [cases, setCases] = useState<any[]>(STATIC_FALLBACK_CASES);
+  const [activeCaseIndex, setActiveCaseIndex] = useState(0);
+
+  const fetchDbCases = async () => {
+    try {
+      const q = collection(db, 'cases');
+      const querySnapshot = await getDocs(q);
+      const loaded: any[] = [];
+      querySnapshot.forEach((doc) => {
+        loaded.push({ id: doc.id, ...doc.data() });
+      });
+
+      let finalCases = [...loaded];
+      const hasDefaultCase = loaded.some((c: any) => c.id === 'caso_defecto_1' || c.id === 'case_static_1' || c.id === 'default_1');
+      if (loaded.length > 0 && !hasDefaultCase) {
+        finalCases.push({
+          ...STATIC_FALLBACK_CASES[0],
+          orderIndex: 99
+        });
+      }
+
+      if (finalCases.length > 0) {
+        const sorted = [...finalCases].sort((a: any, b: any) => {
+          const valA = (a.orderIndex !== undefined && a.orderIndex !== null) ? Number(a.orderIndex) : 9999;
+          const valB = (b.orderIndex !== undefined && b.orderIndex !== null) ? Number(b.orderIndex) : 9999;
+          const normA = isNaN(valA) ? 9999 : valA;
+          const normB = isNaN(valB) ? 9999 : valB;
+          if (normA !== normB) {
+            return normA - normB;
+          }
+          
+          const getSecVal = (c: any) => {
+            if (c.createdAt) {
+              if (typeof c.createdAt.seconds === 'number') return c.createdAt.seconds;
+              if (c.createdAt instanceof Date) return c.createdAt.getTime() / 1000;
+              if (typeof c.createdAt.toDate === 'function') {
+                return c.createdAt.toDate().getTime() / 1000;
+              }
+            }
+            return 0;
+          };
+          return getSecVal(b) - getSecVal(a);
+        });
+        setCases(sorted);
+        setActiveCaseIndex(0);
+      } else {
+        setCases(STATIC_FALLBACK_CASES);
+        setActiveCaseIndex(0);
+      }
+    } catch (e) {
+      console.warn("Could not fetch DB cases, using high-fidelity static fallback:", e);
+      setCases(STATIC_FALLBACK_CASES);
+      setActiveCaseIndex(0);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
+    fetchDbCases();
   }, []);
 
-  const archiveCases: CaseDetail[] = [
-    {
-      id: '01',
-      name: 'Arquitectura Proporcional',
-      desc: 'Carillas cerámicas ultra finas y re-estructuración de arcada',
-      challenge: 'Desalineación dental severa, asimetría de márgenes gingivales e hipoplasia del esmalte generalizada que causaba timidez sistemática en el paciente.',
-      solution: 'Micro-gingivectomía de alta precisión asistida por tecnología diagnóstica avanzada para armonizar contornos, acompañada de la colocación minuciosa de 10 carillas cerámicas sinterizadas de disilicato de litio de espesor mínimo (0.3mm), adaptadas individualmente respetando la microtextura interna.',
-      material: 'Disilicato de litio Feldespático puro de alta pureza lumínica',
-      duration: '3 sesiones clínicas',
-      thumbnail: img4,
-      beforeImg: teethBefore,
-      afterImg: teethAfter,
-      doctorNotes: 'Diseño morfológico enfocado en la refracción de luz ambiental. Logramos mimetizar prismas de esmalte de carácter natural con terminaciones imperceptibles.'
-    },
-    {
-      id: '02',
-      name: 'Armonía Tisular',
-      desc: 'Implantología guiada de vanguardia y estética rosa',
-      challenge: 'Pérdida ósea localizada en sector anterosuperior con colapso de la encía vecina y asimetría crítica de la línea de la sonrisa.',
-      solution: 'Regeneración ósea guiada en 3D seguida de la colocación tridimensional exacta de implante de alta gama con carga inmediata asistida por computadora. El contorno marginal fue guiado mediante un provisional de acrílico biomimético pulido a espejo.',
-      material: 'Titanio Grado 5 de alta integración y corona de Circonio multilaminada',
-      duration: '4 meses de maduración tisular',
-      thumbnail: img5,
-      beforeImg: teethBefore,
-      afterImg: teethAfter,
-      doctorNotes: 'La arquitectura gingival alrededor del implante mantiene una consistencia y tono idénticos a los cuadrantes adyacentes, logrando la máxima naturalidad.'
-    },
-    {
-      id: '03',
-      name: 'Re-diseño Gingival Láser',
-      desc: 'Nivelación de encías y rejuvenecimiento dentolabial',
-      challenge: 'Erupción pasiva alterada (sonrisa gingival severa) con coronas dentales cortas y un margen tisular rugoso.',
-      solution: 'Plástica gingival micro-quirúrgica selectiva con láser Er,Cr:YSGG para exponer la corona clínica real en su proporción áurea, complementada con microcarillas adhesivas ultra-lúcidas refinadas a mano.',
-      material: 'Cerámica inyectada de silicato multilaminado refractario',
-      duration: '2 sesiones personalizadas',
-      thumbnail: img7,
-      beforeImg: teethBefore,
-      afterImg: teethAfter,
-      doctorNotes: 'Un tratamiento mínimamente invasivo con postoperatorio indoloro. La sonrisa recuperó su balance geométrico con el labio superior.'
-    },
-    {
-      id: '04',
-      name: 'Restauración Biomimética',
-      desc: 'Rehabilitación posfacial de desgaste por bruxismo severo',
-      challenge: 'Pérdida acusada de la dimensión vertical con destrucción del tercio medio de las caras oclusales, sensibilidad dentaria constante y fatiga muscular.',
-      solution: 'Restablecimiento de la guía canina y oclusión céntrica mediante fragmentos cerámicos de alta resistencia micro-adheridos (overlays table-tops) sin tallado agresivo.',
-      material: 'Composite nanohíbrido estructurado y Silicato de Litio prensado',
-      duration: '4 sesiones de rehabilitación holística',
-      thumbnail: img8,
-      beforeImg: teethBefore,
-      afterImg: teethAfter,
-      doctorNotes: 'Además de la indudable corrección estética, devolvemos la función articular protegiendo la estructura biológica de largo plazo.'
-    },
-    {
-      id: '05',
-      name: 'Alineación Micro-Sincrónica',
-      desc: 'Ortodoncia invisible secuenciada de alta complejidad',
-      challenge: 'Apiñamiento severo con rotaciones axiales incompatibles con carillas cerámicas directas sin previo alineamiento conservador.',
-      solution: 'Planificación virtual tridimensional selectiva mediante simulación biomecánica tridimensional y uso secuenciado de alineadores transparentes de poliuretano de última generación.',
-      material: 'Alineadores poliméricos inteligentes activos con memoria de forma',
-      duration: '6 meses de modelamiento continuo',
-      thumbnail: img9,
-      beforeImg: teethBefore,
-      afterImg: teethAfter,
-      doctorNotes: 'Preparación dental ideal que nos permite realizar la colocación posterior de carillas conservadoras con cero tallado destructivo.'
-    }
-  ];
-
-  // Lock scroll snap of main browser view whenever any modal is active
   useEffect(() => {
-    if (isArchiveOpen || selectedCase) {
-      document.body.classList.add('modal-open');
-    } else {
-      document.body.classList.remove('modal-open');
-    }
-    return () => {
-      document.body.classList.remove('modal-open');
+    const handleRefresh = () => {
+      fetchDbCases();
     };
-  }, [isArchiveOpen, selectedCase]);
+    window.addEventListener('bellini-cases-updated', handleRefresh);
+    return () => window.removeEventListener('bellini-cases-updated', handleRefresh);
+  }, []);
+
+  const activeCase = cases[activeCaseIndex] || cases[0] || STATIC_FALLBACK_CASES[0];
 
   return (
     <section 
       id="casos" 
-      className="w-screen h-screen shrink-0 snap-start relative px-6 md:px-16 lg:px-24 py-16 md:py-24 flex flex-col justify-center bg-[#0a0a0a] text-[var(--color-bellini-primary)] overflow-hidden"
+      className="w-screen h-screen shrink-0 snap-start relative px-4 md:px-12 lg:px-20 pt-24 md:pt-[110px] pb-6 flex flex-col justify-between bg-[#0a0a0a] text-[var(--color-bellini-primary)] overflow-hidden select-text"
     >
-      <div className="max-w-7xl mx-auto w-full flex flex-col justify-between h-full py-4">
-        {/* Editorial Heading */}
-        <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1 }}
-          >
-            <span className="text-[9px] uppercase tracking-[0.3em] text-[#8e8e8e] mb-2 block font-light">
-              Resultados Clínicos / Casos
+      <div className="max-w-7xl mx-auto w-full flex flex-col h-full justify-between z-10 min-h-0 select-text">
+        
+        {/* Concise Editorial Title */}
+        <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 border-b border-[#222]/30 pb-4">
+          <div className="flex-grow max-w-3xl">
+            <span className="text-[10px] uppercase tracking-[0.3em] text-[#8e8e8e] mb-1.5 block font-light">
+              Gabinete Clínico / Casos Reales
             </span>
-            <h2 className="font-serif text-2xl md:text-4xl leading-tight text-[#ECE8E1] font-light">
-              Transformación <span className="italic text-[#8e8e8e]">Refinada</span>
+            <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl leading-tight text-[#ECE8E1] font-semibold">
+              {activeCase.name}
             </h2>
-          </motion.div>
-
-          <div className="flex items-center gap-6">
-            <motion.p 
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1, delay: 0.2 }}
-              className="text-[11px] text-[#8e8e8e] font-light max-w-sm hidden lg:block leading-relaxed"
-            >
-              Cada tratamiento es un tratado de anatomía, pulido óptico y mimetismo tisular. Seleccione uno de los casos destacados para examinar los protocolos clínicos y su antes y después interactivo.
-            </motion.p>
-            
+          </div>
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 shrink-0">
+            <span className="text-[11px] text-[#8e8e8e] font-light max-w-xs hidden lg:block leading-relaxed text-left">
+              {activeCase.beforeImg 
+                ? 'Examine los registros reales deslizando el mouse de un lado a otro sobre la imagen central.'
+                : 'Examine el registro fotográfico real de alta fidelidad de la restauración finalizada.'}
+            </span>
             <button 
-              onClick={() => setIsArchiveOpen(true)}
-              className="text-[10px] uppercase tracking-[0.2em] border border-[#ECE8E1]/20 hover:border-[#ECE8E1] text-[#ECE8E1] px-5 py-3 transition-all duration-500 cursor-pointer rounded-sm bg-transparent pointer-events-auto"
-              id="btn-open-archive"
+              onClick={() => setShowFutureCasesModal(true)}
+              className="group text-[9.5px] uppercase tracking-[0.2em] border border-[var(--color-bellini-primary)] px-5 py-2.5 rounded-full hover:bg-[var(--color-bellini-primary)] hover:text-[#0a0a0a] hover:border-[var(--color-bellini-primary)] transition-all duration-300 font-semibold cursor-pointer whitespace-nowrap active:scale-95 pointer-events-auto flex items-center gap-1.5"
             >
-              Archivo de Casos
+              Ver más casos
+              <motion.span 
+                animate={{ x: [0, 5, 0] }}
+                transition={{
+                  duration: 1.8,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+                className="inline-block"
+              >
+                ➔
+              </motion.span>
             </button>
           </div>
         </div>
 
-        {/* Brand-new Thumbnail List Grid: 3 Main Clinical Cases with Images */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-auto pt-6 pb-4">
-          {archiveCases.slice(0, 3).map((item, idx) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1.2, delay: idx * 0.15, ease: [0.16, 1, 0.3, 1] }}
-              onClick={() => setSelectedCase(item)}
-              className="group relative flex flex-col bg-[#111] hover:bg-[#141414] border border-[#222]/40 hover:border-[var(--color-bellini-primary)]/20 p-4 rounded-lg cursor-pointer transition-all duration-500 overflow-hidden"
-            >
-              {/* Thumbnail Image Container */}
-              <div className="relative w-full aspect-[16/10] overflow-hidden rounded mb-4 bg-[#0a0a0a]">
-                <img 
-                  src={item.thumbnail} 
-                  alt={item.name} 
-                  className="w-full h-full object-cover filter grayscale contrast-[1.1] transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0 opacity-80 group-hover:opacity-100"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a]/80 via-transparent to-transparent opacity-80" />
-                <span className="absolute top-3 left-3 font-serif text-[10px] text-[var(--color-bellini-primary)] bg-[#0a0a0a]/80 py-1 px-2 rounded backdrop-blur-sm border border-white/5 uppercase tracking-wider">
-                  Caso {item.id}
+        {/* Master Presentation Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch flex-grow overflow-hidden min-h-0 py-4 select-text">
+          
+          {/* LEFT: Before/After Interactive Slider / Standalone Image */}
+          <div className="lg:col-span-7 flex flex-col justify-between h-full min-h-0 bg-[#111]/20 rounded-xl p-4 border border-[#222]/30">
+            <div className="flex-grow flex items-center justify-center relative rounded-lg overflow-hidden bg-[#060606] select-none">
+              
+              {activeCase.beforeImg ? (
+                <>
+                  {/* Overlapped before-after images with pure hover slide reveal */}
+                  <BeforeAfterSlider 
+                    beforeImage={activeCase.beforeImg} 
+                    afterImage={activeCase.afterImg} 
+                  />
+                  <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center pointer-events-none select-none">
+                    <span className="bg-[#0a0a0a]/90 text-[8.5px] uppercase tracking-[0.15em] text-[var(--color-bellini-primary)] py-1.5 px-3 rounded border border-white/5 shadow-md">
+                      ⇄ Deslice el mouse horizontalmente para revelar la transformación
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center relative bg-[#060606] group cursor-default">
+                  <img 
+                    src={activeCase.afterImg} 
+                    alt={activeCase.name} 
+                    className="max-w-full max-h-full object-contain filter grayscale hover:grayscale-0 transition-all duration-700 pointer-events-auto"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute bottom-3 right-3 flex items-center pointer-events-none select-none">
+                    <span className="bg-[#0a0a0a]/90 text-[8.5px] uppercase tracking-[0.15em] text-[var(--color-bellini-primary)] py-1.5 px-3 rounded border border-white/5 shadow-md">
+                      Registro de Resultado de Tratamiento
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+            </div>
+
+            {/* Gallery of extra photos representing clinical process steps */}
+            {activeCase.galleryImages && activeCase.galleryImages.length > 0 && (
+              <div className="mt-4 flex flex-col gap-2 pointer-events-auto">
+                <span className="text-[9px] uppercase tracking-widest text-[#666] font-semibold text-left pl-1">
+                  Registro del Proceso de Laboratorio & Secuencia Clínica:
                 </span>
-                <span className="absolute bottom-3 right-3 text-[8px] uppercase tracking-widest text-white/50 group-hover:text-[var(--color-bellini-primary)] transition-colors">
-                  Examen Clínico →
+                <div 
+                  className="grid gap-3 transition-all duration-500"
+                  style={{ gridTemplateColumns: `repeat(${Math.min(activeCase.galleryImages.length, 3)}, minmax(0, 1fr))` }}
+                >
+                  {activeCase.galleryImages.map((imgUrl: string, stepIdx: number) => (
+                    <div 
+                      key={stepIdx}
+                      onClick={() => setActiveLightboxImg(imgUrl)}
+                      className="group relative aspect-[14/9] bg-[#0c0c0c] border border-[#222] rounded overflow-hidden cursor-zoom-in transition-all duration-300 hover:border-[var(--color-bellini-primary)]/45 pointer-events-auto"
+                    >
+                      <img 
+                        src={imgUrl} 
+                        alt={`Secuencia clínica ${stepIdx + 1}`}
+                        className="w-full h-full object-cover filter grayscale hover:grayscale-0 transition-transform duration-500 group-hover:scale-105"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col justify-end p-2 transition-opacity duration-300 pointer-events-none">
+                        <p className="text-[7.5px] text-[var(--color-bellini-primary)] font-semibold uppercase tracking-wider line-clamp-1">Detalle {stepIdx + 1}</p>
+                        <p className="text-[6.5px] text-white/50 font-light truncate">Protocolo Fotográfico</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT: Sophisticated Case Technical File ("Ficha Técnica") */}
+          <div className="lg:col-span-5 flex flex-col bg-[#111]/40 border border-[#222]/50 hover:border-[var(--color-bellini-primary)]/25 rounded-xl transition-all duration-500 text-left h-full min-h-0 overflow-hidden select-text pointer-events-auto">
+            
+            {/* Scrollable informational details inside the card */}
+            <div className="flex-grow overflow-y-auto p-6 space-y-5 custom-scrollbar scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
+              
+              <div>
+                <span className="inline-block text-[10px] uppercase tracking-[0.2em] text-[var(--color-bellini-primary)] bg-[var(--color-bellini-primary)]/10 px-2.5 py-1 rounded font-semibold mb-2">
+                  {activeCase.category || 'Gabinete Clínico'}
                 </span>
+                <h3 className="font-serif text-xl md:text-2xl text-[#ECE8E1] tracking-wide leading-tight">
+                  {activeCase.name}
+                </h3>
+                <p className="text-xs md:text-sm text-[#8e8e8e] font-light leading-relaxed mt-2">
+                  {activeCase.desc}
+                </p>
               </div>
 
-              {/* Title and Short description */}
-              <div className="flex flex-col text-left pl-1">
-                <h3 className="font-serif text-lg text-[#ECE8E1] mb-1 group-hover:text-[var(--color-bellini-primary)] transition-colors">
-                  {item.name}
-                </h3>
-                <p className="text-[11px] text-[#8e8e8e] font-light leading-relaxed line-clamp-2">
-                  {item.desc}
-                </p>
+              {/* Ficha Técnica Details */}
+              <div className="grid grid-cols-1 gap-5 border-t border-[#222]/60 pt-5">
                 
-                {/* Micro Metadata */}
-                <span className="text-[8.5px] uppercase tracking-wider text-[#4c4f54] mt-2 group-hover:text-[#8e8e8e] transition-colors">
-                  {item.duration} · {item.material.split(' ')[0]}
-                </span>
+                {/* Diagnóstico */}
+                <div>
+                  <h4 className="text-xs uppercase tracking-widest text-[#ECE8E1] font-semibold text-[var(--color-bellini-primary)]/90 mb-1.5 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-[var(--color-bellini-primary)] rounded-full"></span>
+                    Estado de Entrada (Antes)
+                  </h4>
+                  <p className="text-xs md:text-sm leading-relaxed text-[#c3c1bc] font-light">
+                    {activeCase.challenge}
+                  </p>
+                </div>
+
+                {/* Tratamiento */}
+                <div>
+                  <h4 className="text-xs uppercase tracking-widest text-[#ECE8E1] font-semibold text-[var(--color-bellini-primary)]/90 mb-1.5 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-[#8e8e8e] rounded-full"></span>
+                    Tratamiento Clínico (Después)
+                  </h4>
+                  <p className="text-xs md:text-sm leading-relaxed text-[#c3c1bc] font-light">
+                    {activeCase.solution}
+                  </p>
+                </div>
+
+                {/* Technical specifications */}
+                <div className="grid grid-cols-2 gap-4 border-t border-[#222]/40 pt-5">
+                  <div>
+                    <h5 className="text-[10px] uppercase tracking-widest text-[#8e8e8e] mb-1">Material Utilizado</h5>
+                    <p className="text-xs md:text-sm text-[#ECE8E1] leading-snug font-medium">{activeCase.material}</p>
+                  </div>
+                  <div>
+                    <h5 className="text-[10px] uppercase tracking-widest text-[#8e8e8e] mb-1">Sesiones Clínicas</h5>
+                    <p className="text-xs md:text-sm text-[#ECE8E1] leading-snug font-medium">{activeCase.duration}</p>
+                  </div>
+                </div>
+
+                {/* Professional Observaciones */}
+                {activeCase.doctorNotes && (
+                  <div className="border-l border-[var(--color-bellini-primary)]/40 pl-4 py-2 bg-white/[0.02] rounded-r mt-3">
+                    <span className="block text-[8px] uppercase tracking-widest text-[var(--color-bellini-primary)]/70 mb-1 font-bold">
+                      Nota del Especialista
+                    </span>
+                    <p className="text-xs md:text-[13px] leading-relaxed italic text-[#8e8e8e]/95">
+                      &ldquo;{activeCase.doctorNotes}&rdquo;
+                    </p>
+                  </div>
+                )}
+
               </div>
-            </motion.div>
-          ))}
+            </div>
+
+            {/* Direct Booking Action - Pinned stably at the bottom of the card */}
+            <div className="p-5 border-t border-[#222]/60 bg-[#111]/80 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
+              <span className="text-[10px] uppercase tracking-[0.25em] text-[#8e8e8e]">
+                Bellini Dental Studio
+              </span>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const container = document.getElementById('main-scroll-container');
+                  if (container) {
+                    window.dispatchEvent(new CustomEvent('nav-scroll-start', { detail: { targetIndex: 5 } }));
+                    container.scrollTo({
+                      left: 5 * container.clientWidth,
+                      behavior: 'smooth'
+                    });
+                  }
+                }}
+                className="w-full sm:w-auto text-[10px] uppercase tracking-[0.2em] bg-[var(--color-bellini-primary)] text-[#0a0a0a] px-6 py-3 rounded hover:bg-[#fff] hover:text-[#0a0a0a] transition-all duration-300 font-semibold cursor-pointer border-none shadow-md active:scale-95 whitespace-nowrap"
+              >
+                Solicitar valoración del Caso →
+              </button>
+            </div>
+          </div>
+
         </div>
 
-        {/* Micro guide text on bottom line */}
-        <div className="flex justify-between items-center text-[8px] uppercase tracking-[0.25em] text-[#4c4f54] pt-2 border-t border-[#222]/40">
-          <span>Estudio de Arquitectura Oral</span>
-          <span>Haga clic en un caso para ver antes y después</span>
+        {/* Footer info strip */}
+        <div className="flex justify-between items-center text-[8px] uppercase tracking-[0.25em] text-[#4c4f54] pt-3 border-t border-[#222]/45">
+          <span>Estudio de Mimetismo & Diseño Oral</span>
+          <span>Imágenes reales de tratamiento clínico</span>
         </div>
       </div>
 
-      {/* FULL ARCHIVE SLIDE-OUT PANEL (DEDICATED MODAL VIA PORTAL) */}
+      {/* MODAL 1: PREVIEW ARCHIVE OF FUTURE CLINICAL CASES (VIA PORTAL) */}
       {mounted && createPortal(
         <AnimatePresence>
-          {isArchiveOpen && (
-            <motion.div 
+          {showFutureCasesModal && (
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-[#060606]/95 z-[9999] backdrop-blur-md flex justify-end overflow-hidden pointer-events-auto"
-              onClick={() => setIsArchiveOpen(false)}
+              className="fixed inset-0 bg-black/95 z-[999999] backdrop-blur-xl flex items-center justify-center p-4 md:p-8"
+              onClick={() => setShowFutureCasesModal(false)}
             >
-              {/* Main Slide-in Panel */}
-              <motion.div 
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ type: 'spring', damping: 28, stiffness: 170 }}
-                className="w-full md:w-[600px] bg-[#0c0c0c] border-l border-[#222] h-full p-8 md:p-12 overflow-y-auto flex flex-col justify-between pointer-events-auto"
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 30 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="bg-[#0f0f0f] border border-[#222] p-6 md:p-10 rounded-2xl max-w-4xl w-full max-h-[85vh] flex flex-col justify-between overflow-hidden shadow-2xl relative text-left"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div>
-                  <div className="flex justify-between items-center mb-8 border-b border-[#222] pb-6">
-                    <div>
-                      <span className="text-[9px] uppercase tracking-[0.3em] text-[#8e8e8e]">Bellini Dental Studio</span>
-                      <h3 className="font-serif text-2xl text-[#ECE8E1] mt-1 font-light">Casos de Éxito Clínico</h3>
-                    </div>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsArchiveOpen(false);
-                      }}
-                      className="text-[10px] tracking-[0.2em] uppercase text-[#8e8e8e] hover:text-[var(--color-bellini-primary)] border border-white/10 hover:border-[var(--color-bellini-primary)]/40 px-3 py-2 transition-all cursor-pointer bg-transparent pointer-events-auto relative z-50"
-                    >
-                      Cerrar✕
-                    </button>
-                  </div>
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowFutureCasesModal(false)}
+                  className="absolute top-4 right-4 text-[#8e8e8e] hover:text-white text-xs uppercase tracking-widest p-2 cursor-pointer transition-all border-none bg-transparent"
+                >
+                  Cerrar [X]
+                </button>
 
-                  <p className="text-[12px] text-[#8e8e8e] font-light leading-relaxed mb-6">
-                    Presentamos una visión expandida de nuestras intervenciones estética-dentofaciales. Cada registro contiene un riguroso análisis estructural y la resolución biológica.
+                {/* Modal Title */}
+                <div className="mb-6 border-b border-[#222]/60 pb-5">
+                  <span className="text-[10px] uppercase tracking-[0.3em] text-[var(--color-bellini-primary)]/80 block mb-1">
+                    Gabinete Clínico Completo
+                  </span>
+                  <h3 className="font-serif text-2xl md:text-3xl text-[#ECE8E1] font-light">
+                    Archivo de Casos Registrados
+                  </h3>
+                  <p className="text-xs text-[#8e8e8e] font-light mt-2 max-w-2xl leading-relaxed">
+                    Explore la bitácora interactiva de mimetismo y reconstrucción oral. Haga clic en cualquiera de los casos presentados a continuación para cargarlo en el visualizador del gabinete principal y explorar su secuencia fotográfica completa.
                   </p>
+                </div>
 
-                  {/* Vertical Archive list items with image previews */}
-                  <div className="flex flex-col gap-4">
-                    {archiveCases.map((item) => (
-                      <div 
-                        key={item.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedCase(item);
-                        }}
-                        className="group border border-[#222]/40 hover:border-[var(--color-bellini-primary)]/20 bg-[#111]/60 hover:bg-[#111] p-3 rounded transition-all duration-300 cursor-pointer flex gap-4 items-center text-left"
-                      >
-                        <div className="w-16 h-12 bg-[#0a0a0a] rounded overflow-hidden flex-shrink-0">
-                          <img 
-                            src={item.thumbnail} 
-                            alt={item.name} 
-                            className="w-full h-full object-cover filter grayscale transition-all duration-500 group-hover:scale-105 group-hover:grayscale-0"
-                          />
-                        </div>
-                        <div className="flex-grow">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <span className="font-serif text-[10.5px] text-[#555]">{item.id}</span>
-                            <h4 className="font-serif text-[14px] text-[#ECE8E1] font-medium tracking-wide group-hover:text-[var(--color-bellini-primary)] transition-colors">
-                              {item.name}
-                            </h4>
+                {/* Dinámicos Casos Grid - Scrollable area inside Modal */}
+                <div className="flex-grow overflow-y-auto space-y-4 pr-1 mb-6 custom-scrollbar">
+                  {cases.map((c, idx) => (
+                    <div 
+                      key={c.id || idx}
+                      onClick={() => {
+                        setActiveCaseIndex(idx);
+                        setShowFutureCasesModal(false);
+                      }}
+                      className={`p-5 rounded-xl transition-all duration-300 grid grid-cols-1 md:grid-cols-12 gap-4 items-center cursor-pointer pointer-events-auto border-2 ${
+                        activeCaseIndex === idx
+                          ? 'bg-[#FAF7F0] border-[var(--color-bellini-primary)] shadow-xl scale-[1.01]'
+                          : 'bg-[#ECE8E1] hover:bg-[#F2EFE8] border-[#dbd6cc] hover:border-[#cbc6bc]'
+                      }`}
+                    >
+                      {/* Left Column: Category and Custom Position Label */}
+                      <div className="md:col-span-3 flex flex-col gap-1 text-left">
+                        <span className="text-[10px] uppercase tracking-widest text-[#7C6E55] font-semibold leading-snug">
+                          {c.category}
+                        </span>
+                        {c.orderIndex !== undefined && c.orderIndex !== null && (
+                          <div className="flex mt-1">
+                            <span className="text-[8.5px] font-mono bg-[#1c1c1c] text-[#FAF7F0] px-2 py-0.5 rounded font-bold">
+                              Prioridad: #{c.orderIndex}
+                            </span>
                           </div>
-                          <p className="text-[11px] text-[#8e8e8e] font-light line-clamp-1">{item.desc}</p>
-                        </div>
-                        <div className="text-[9px] uppercase tracking-wider text-[#4c4f54] group-hover:text-[var(--color-bellini-primary)] pr-2 transition-colors">
-                          Ficha →
+                        )}
+                      </div>
+
+                      {/* Center Column: Text description of the case in Dark Mode colors reversed */}
+                      <div className="md:col-span-6 flex flex-col justify-center text-left">
+                        <h4 className="font-serif text-[16px] text-[#111111] tracking-wide font-medium leading-snug">
+                          {c.name}
+                        </h4>
+                        <p className="text-[11.5px] text-[#4A463F] font-light leading-relaxed mt-1 line-clamp-2">
+                          {c.desc}
+                        </p>
+                      </div>
+
+                      {/* Right Column: Thumbnail image and action */}
+                      <div className="md:col-span-3 text-right flex items-center justify-end gap-3 md:flex-row flex-row-reverse w-full">
+                        {c.afterImg && (
+                          <div className="w-12 h-12 rounded-lg overflow-hidden border border-[#cbc6bc] bg-black/5 shrink-0 self-center">
+                            <img 
+                              src={c.afterImg} 
+                              alt={c.name} 
+                              className="w-full h-full object-cover filter transition-all duration-500"
+                              referrerPolicy="no-referrer"
+                            />
+                          </div>
+                        )}
+                        <div className="text-left md:text-right flex flex-col gap-1 flex-grow">
+                          <span className={`inline-block text-[8.5px] font-bold uppercase tracking-widest px-2.5 py-1 rounded w-fit md:ml-auto transition-all ${
+                            activeCaseIndex === idx 
+                              ? 'bg-[var(--color-bellini-primary)] text-[#0a0a0a]' 
+                              : 'bg-[#1c1c1c] text-[#FAF7F0] hover:bg-[#333]'
+                          }`}>
+                            {activeCaseIndex === idx ? 'Activo' : 'Explorar ➔'}
+                          </span>
+                          <span className="text-[10px] text-[#7C6E55] font-semibold mt-0.5">
+                            Botón: {c.tabLabel}
+                          </span>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
 
-                <div className="border-t border-[#222] pt-6 mt-8 flex justify-between items-center text-[9px] uppercase tracking-[0.15em] text-[#555]">
-                  <span>Práctica Odontológica Exclusiva</span>
+                {/* Footer Modal Info */}
+                <div className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-[#222]/40 text-[9px] uppercase tracking-[0.2em] text-[#555] gap-3">
+                  <span>Bellini Dental Studio · Innovación Biométrica</span>
                   <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsArchiveOpen(false);
-                    }}
-                    className="underline text-[#8e8e8e] hover:text-white transition-colors cursor-pointer bg-transparent pointer-events-auto"
-                  >
-                    Regresar al recorrido
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </ AnimatePresence>,
-        document.body
-      )}
-
-      {/* SINGLE CASE DETAIL DIALOG + INTEGRATED BEFORE/AFTER SLIDER (VIA PORTAL) */}
-      {mounted && createPortal(
-        <AnimatePresence>
-          {selectedCase && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedCase(null)}
-              className="fixed inset-0 bg-black/95 z-[99999] backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto pointer-events-auto"
-            >
-              <motion.div 
-                initial={{ scale: 0.95, y: 30 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.95, y: 30 }}
-                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-3xl bg-[#0e0e0e] border border-[#222]/80 p-5 md:p-8 rounded-xl text-left flex flex-col max-h-[90vh] overflow-y-auto my-auto custom-scrollbar pointer-events-auto"
-              >
-                {/* Header inside Modal */}
-                <div className="flex justify-between items-start mb-6 border-b border-[#222] pb-5">
-                  <div>
-                    <span className="text-[9px] uppercase tracking-[0.25em] text-[#8e8e8e]">Estudio Clínico {selectedCase.id}</span>
-                    <h4 className="font-serif text-xl md:text-2xl text-[#ECE8E1] mt-0.5">{selectedCase.name}</h4>
-                    <p className="text-[11px] text-[#8e8e8e] font-light mt-1">{selectedCase.desc}</p>
-                  </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedCase(null);
-                    }}
-                    className="text-[10px] tracking-wider text-[#8e8e8e] hover:text-[var(--color-bellini-primary)] border border-white/10 hover:border-[var(--color-bellini-primary)]/40 px-3 py-1.5 transition-all cursor-pointer bg-transparent rounded pointer-events-auto"
-                  >
-                    Regresar ✕
-                  </button>
-                </div>
-
-                {/* INTERACTIVE BEFORE/AFTER SLIDER INSIDE DETAILED VIEW */}
-                <div className="w-full max-h-[35vh] overflow-hidden relative flex justify-center items-center rounded-lg border border-white/5 mb-6 bg-[#060606]">
-                  <BeforeAfterSlider 
-                    beforeImage={selectedCase.beforeImg} 
-                    afterImage={selectedCase.afterImg} 
-                  />
-                  
-                  {/* Embedded instruction badge */}
-                  <span className="absolute bottom-3 left-3 bg-[#0a0a0a]/90 text-[8px] uppercase tracking-[0.2em] text-[var(--color-bellini-primary)]/70 py-1 px-2.5 rounded border border-white/5 pointer-events-none select-none">
-                    Deslice para comparar el cambio clínico
-                  </span>
-                </div>
-
-                {/* Case content with sections */}
-                <div className="space-y-5 text-[12px] md:text-[13px] leading-relaxed text-[#8e8e8e] font-light">
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="bg-[#111]/30 p-4 rounded border border-[#222]/30 text-left">
-                      <h5 className="text-[9px] uppercase tracking-widest text-[#ECE8E1] mb-2 font-medium">Diagnóstico / Desafío Clínico</h5>
-                      <p className="leading-relaxed font-light">{selectedCase.challenge}</p>
-                    </div>
-
-                    <div className="bg-[#111]/30 p-4 rounded border border-[#222]/30 text-left">
-                      <h5 className="text-[9px] uppercase tracking-widest text-[#ECE8E1] mb-2 font-medium">Protocolo de Planificación y Solución</h5>
-                      <p className="leading-relaxed font-light">{selectedCase.solution}</p>
-                    </div>
-                  </div>
-
-                  {/* Additional Clinical observations / Doctor notes */}
-                  {selectedCase.doctorNotes && (
-                    <div className="border-l-2 border-[var(--color-bellini-primary)]/30 pl-4 py-1 italic bg-[#111]/10 text-[#8e8e8e]/95">
-                      <span className="block not-italic text-[8px] uppercase tracking-widest text-[var(--color-bellini-primary)]/60 mb-1 font-medium">Observaciones de Autor</span>
-                      &ldquo;{selectedCase.doctorNotes}&rdquo;
-                    </div>
-                  )}
-
-                  {/* Core specifications grid */}
-                  <div className="grid grid-cols-2 gap-4 border-t border-[#222]/60 pt-4 mt-4">
-                    <div>
-                      <h5 className="text-[9px] uppercase tracking-widest text-[#ECE8E1]/60 mb-0.5 font-medium">Materiales de Precisión</h5>
-                      <p className="text-[11.5px] text-[#ECE8E1]/80 font-normal leading-snug">{selectedCase.material}</p>
-                    </div>
-                    <div>
-                      <h5 className="text-[9px] uppercase tracking-widest text-[#ECE8E1]/60 mb-0.5 font-medium">Duración de Sesiones</h5>
-                      <p className="text-[11.5px] text-[#ECE8E1]/80 font-normal leading-snug">{selectedCase.duration}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action layout */}
-                <div className="mt-8 flex flex-col sm:flex-row justify-between items-center border-t border-[#222] pt-5 gap-4">
-                  <span className="text-[8.5px] uppercase tracking-[0.2em] text-[#4c4f54]">
-                    Microfotografía intraoral de alta definición
-                  </span>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedCase(null);
-                      setIsArchiveOpen(false);
+                    onClick={() => {
+                      setShowFutureCasesModal(false);
                       const container = document.getElementById('main-scroll-container');
                       if (container) {
                         window.dispatchEvent(new CustomEvent('nav-scroll-start', { detail: { targetIndex: 5 } }));
@@ -409,14 +445,100 @@ export function Gallery() {
                         });
                       }
                     }}
-                    className="w-full sm:w-auto text-[9.5px] uppercase tracking-[0.2em] bg-[var(--color-bellini-primary)] text-[#0a0a0a] px-5 py-3 rounded hover:bg-[#fff] transition-all font-semibold cursor-pointer pointer-events-auto border-none"
+                    className="text-[9px] uppercase tracking-[0.2em] underline text-[var(--color-bellini-primary)] hover:text-white border-none bg-transparent cursor-pointer font-semibold"
                   >
-                    Agendar valoración similar →
+                    Consultar disponibilidad de especialidades →
                   </button>
                 </div>
               </motion.div>
             </motion.div>
           )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* MODAL 2: FULL-SCREEN LIGHTBOX POPUP FOR PROCESS PHOTOS (VIA PORTAL) */}
+      {mounted && createPortal(
+        <AnimatePresence>
+          {activeLightboxImg && (() => {
+            const index = activeCase.galleryImages?.indexOf(activeLightboxImg) ?? -1;
+            const descText = (activeCase.galleryDescriptions && activeCase.galleryDescriptions[index]) 
+              ? activeCase.galleryDescriptions[index] 
+              : "Detalle del paso clínico o de laboratorio. Secuencia fotográfica registrada por el especialista para certificar el mimetismo absoluto, la integridad marginal y la correcta refractariedad de la porcelana frente a la luz natural.";
+            
+            return (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setActiveLightboxImg(null)}
+                className="fixed inset-0 bg-black/98 z-[999999] backdrop-blur-xl flex flex-col items-center justify-center p-4 md:p-8 cursor-zoom-out pointer-events-auto animate-fadeIn"
+              >
+                {/* Modal Container */}
+                <div 
+                  className="bg-[#0b0b0b] border border-[#222] rounded-2xl max-w-5xl w-full max-h-[85vh] flex flex-col md:flex-row overflow-hidden shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  
+                  {/* Left panel: Clinical Image */}
+                  <div className="flex-grow md:w-3/5 bg-black flex items-center justify-center p-4 relative group">
+                    <img 
+                      src={activeLightboxImg} 
+                      alt="Registro clínico de laboratorio" 
+                      className="max-w-full max-h-[50vh] md:max-h-[70vh] object-contain rounded-lg shadow-lg border border-white/5"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute top-4 left-4 bg-black/80 px-2.5 py-1 rounded border border-white/5 text-[8.5px] font-mono text-[var(--color-bellini-primary)] uppercase tracking-widest">
+                      Imagen {index !== -1 ? String(index + 1).padStart(2, '0') : 'Fase'}
+                    </div>
+                  </div>
+
+                  {/* Right panel: Descriptive Content */}
+                  <div className="w-full md:w-2/5 p-6 md:p-8 flex flex-col justify-between border-t md:border-t-0 md:border-l border-[#222]/80 bg-[#0e0e0e]/50 text-left select-text">
+                    <div className="space-y-4">
+                      <div>
+                        <span className="text-[10px] uppercase tracking-[0.25em] text-[var(--color-bellini-primary)] font-bold block mb-1">
+                          Secuencia Clínica Detallada
+                        </span>
+                        <h4 className="font-serif text-lg text-white font-light leading-snug">
+                          {activeCase.name}
+                        </h4>
+                        <span className="text-[10px] text-[#666] block mt-0.5 uppercase tracking-wider">
+                          Etiqueta: {activeCase.tabLabel}
+                        </span>
+                      </div>
+
+                      <div className="border-t border-[#222]/40 pt-4">
+                        <span className="text-[10px] uppercase tracking-widest text-[#8e8e8e] block mb-2 font-semibold">
+                          Descripción de la Imagen
+                        </span>
+                        <p className="text-xs md:text-sm text-[#c3c1bc] font-light leading-relaxed whitespace-pre-line bg-[#080808]/40 p-4 rounded-lg border border-[#1a1a1a]">
+                          {descText}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-[#222]/40 pt-4 mt-6 flex justify-between items-center bg-[#0e0e0e]/10">
+                      <div className="text-[8px] font-mono text-[#555] uppercase tracking-wider">
+                        Bellini Dental Studio
+                      </div>
+                      <button 
+                        onClick={() => setActiveLightboxImg(null)}
+                        className="text-[9px] uppercase tracking-wider text-[var(--color-bellini-primary)] bg-[#1c1c1c] border border-[#333] hover:border-[var(--color-bellini-primary)] px-3 py-1.5 rounded transition-all cursor-pointer font-bold active:scale-95"
+                      >
+                        Retornar ➔
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+                
+                <span className="text-[8.5px] tracking-widest text-[#555] uppercase mt-4">
+                  HAGA CLIC AFUERA PARA CERRAR EL GABINETE CLÍNICO
+                </span>
+              </motion.div>
+            );
+          })()}
         </AnimatePresence>,
         document.body
       )}
