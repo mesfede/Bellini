@@ -90,7 +90,7 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setAuthChecking(false);
-      if (currentUser && currentUser.email === 'mesfede@gmail.com') {
+      if (currentUser && currentUser.email?.toLowerCase() === 'mesfede@gmail.com') {
         fetchCases();
       }
     });
@@ -391,7 +391,7 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
 
   if (!isOpen) return null;
 
-  const isUserAdmin = user && user.email === 'mesfede@gmail.com';
+  const isUserAdmin = user && user.email?.toLowerCase() === 'mesfede@gmail.com';
 
   return (
     <div className="fixed inset-0 bg-black/95 z-[999999] backdrop-blur-xl flex justify-center items-center p-4 overflow-hidden text-[#ECE8E1]">
