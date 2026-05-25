@@ -105,12 +105,21 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
       setErrorMessage(null);
       await loginWithGoogle();
     } catch (err: any) {
-      if (err.code === 'auth/popup-closed-by-user' || err.message?.includes('popup-closed-by-user') || err.message?.includes('popup_closed_by_user')) {
+      console.error('Firebase Auth Error:', err);
+      if (err.code === 'auth/popup-closed-by-user' || err.message?.includes('popup-closed-by-user') || err.message?.includes('popup_closed_by_user') || err.code === 'auth/popup-blocked' || err.message?.includes('popup-blocked')) {
         setErrorMessage(
-          'Error: La ventana emergente de Google fue bloqueada o cerrada antes de finalizar. Debido a las nuevas políticas de seguridad y bloqueo de cookies de terceros en Google Chrome para iframes, por favor haga clic en el botón de "Abrir en pestaña nueva" (en la esquina superior derecha de la vista previa) de AI Studio e inicie sesión allí para continuar sin restricciones.'
+          'Error: La ventana de Google fue cerrada o bloqueada por el navegador. Si estás probando la vista previa desde el panel de AI Studio, haz clic en "Abrir en pestaña nueva" (en la esquina superior derecha) y vuelve a intentar el login desde allí. Esto soluciona las restricciones de cookies de terceros que aplican a los Iframes en navegadores modernos como Chrome o Safari.'
+        );
+      } else if (err.code === 'auth/unauthorized-domain' || err.message?.includes('unauthorized-domain')) {
+        setErrorMessage(
+          `Error de Dominio Autorizado (auth/unauthorized-domain): El dominio actual (${window.location.hostname}) no está registrado en los dominios autorizados de tu proyecto de Firebase. Para solucionarlo: 1) Entra a tu consola de Firebase. 2) Ve a Authentication -> pestaña Settings -> Authorized Domains. 3) Añade el dominio "${window.location.hostname}" a la lista. ¡Esto habilitará el inicio de sesión con Google en esta dirección de inmediato!`
+        );
+      } else if (err.code === 'auth/operation-not-allowed' || err.message?.includes('operation-not-allowed')) {
+        setErrorMessage(
+          'Error: El inicio de sesión con Google no está habilitado en tu proyecto Firebase. Por favor, ve a Authentication -> pestaña Sign-In Method en la consola de Firebase y habilita el proveedor de Google.'
         );
       } else {
-        setErrorMessage('Error al autenticar: ' + err.message);
+        setErrorMessage(`Error al autenticar [${err.code || 'unknown'}]: ${err.message || String(err)}`);
       }
     }
   };

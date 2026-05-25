@@ -383,13 +383,6 @@ export function Gallery() {
                         <span className="text-[10px] uppercase tracking-widest text-[#7C6E55] font-semibold leading-snug">
                           {c.category}
                         </span>
-                        {c.orderIndex !== undefined && c.orderIndex !== null && (
-                          <div className="flex mt-1">
-                            <span className="text-[8.5px] font-mono bg-[#1c1c1c] text-[#FAF7F0] px-2 py-0.5 rounded font-bold">
-                              Prioridad: #{c.orderIndex}
-                            </span>
-                          </div>
-                        )}
                       </div>
 
                       {/* Center Column: Text description of the case in Dark Mode colors reversed */}
@@ -421,9 +414,6 @@ export function Gallery() {
                               : 'bg-[#1c1c1c] text-[#FAF7F0] hover:bg-[#333]'
                           }`}>
                             {activeCaseIndex === idx ? 'Activo' : 'Explorar ➔'}
-                          </span>
-                          <span className="text-[10px] text-[#7C6E55] font-semibold mt-0.5">
-                            Botón: {c.tabLabel}
                           </span>
                         </div>
                       </div>
