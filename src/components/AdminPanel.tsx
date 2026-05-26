@@ -3,6 +3,7 @@ import {
   collection, 
   getDocs, 
   setDoc, 
+  getDoc,
   doc, 
   deleteDoc, 
   serverTimestamp, 
@@ -91,6 +92,23 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
   const [isPasscodeAuthorized, setIsPasscodeAuthorized] = useState(() => {
     return sessionStorage.getItem('bellini_fallback_auth') === 'true';
   });
+
+  const uEmail = user?.email?.toLowerCase();
+  const mainAdmin = 'mesfede@gmail.com';
+  const scndAdmin = import.meta.env.VITE_ADMIN_EMAIL?.toLowerCase();
+  const isUserAdmin = (user && (uEmail === mainAdmin || (scndAdmin && uEmail === scndAdmin))) || isPasscodeAuthorized;
+  const isCustomProject = !!import.meta.env.VITE_FIREBASE_PROJECT_ID;
+  const isRealFirebaseAdmin = (user && (uEmail === mainAdmin || (scndAdmin && uEmail === scndAdmin))) || (isCustomProject && isUserAdmin);
+
+  const isAuthDomainMismatch = isCustomProject && 
+    import.meta.env.VITE_FIREBASE_AUTH_DOMAIN && 
+    !import.meta.env.VITE_FIREBASE_AUTH_DOMAIN.includes(import.meta.env.VITE_FIREBASE_PROJECT_ID);
+  const isApiKeyMismatch = isCustomProject && 
+    (!import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.VITE_FIREBASE_API_KEY === 'AIzaSyDlSoxYZN4wsEbHtQxBxx4YyXogYqbH_6U');
+  const isAppIdMismatch = isCustomProject && 
+    (!import.meta.env.VITE_FIREBASE_APP_ID || import.meta.env.VITE_FIREBASE_APP_ID === '1:468327137002:web:d8c9007cc66d19c6c8e193');
+
+  const hasCredentialsMismatch = isAuthDomainMismatch || isApiKeyMismatch || isAppIdMismatch;
 
   const getLocalCases = (): ClinicalCase[] => {
     try {
@@ -328,8 +346,6 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
     try {
       setErrorMessage(null);
       let deletedFromFirestore = false;
-      const isRealFirebaseAdmin = user?.email?.toLowerCase() === 'mesfede@gmail.com' || (import.meta.env.VITE_ADMIN_EMAIL && user?.email?.toLowerCase() === import.meta.env.VITE_ADMIN_EMAIL?.toLowerCase());
-      
       if (isRealFirebaseAdmin) {
         try {
           await deleteDoc(doc(db, 'cases', id));
@@ -400,6 +416,134 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
     }
   };
 
+  // Export cases as JSON download
+  const exportCasesToJson = () => {
+    try {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cases, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `bellini_clinica_backup_${new Date().toISOString().slice(0, 10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      setSuccessMessage('Copia de respaldo exportada con éxito. ¡Descarga completada!');
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err: any) {
+      setErrorMessage('Error al exportar los casos: ' + err.message);
+    }
+  };
+
+  // Import cases from JSON upload
+  const importCasesFromJson = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSubmitting(true);
+    setErrorMessage(null);
+    setSuccessMessage('Iniciando importación...');
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const rawText = event.target?.result as string;
+        const parsed = JSON.parse(rawText);
+        
+        if (!Array.isArray(parsed)) {
+          throw new Error('El archivo de respaldo debe contener una lista de casos clínicos (formato Array).');
+        }
+
+        let importCount = 0;
+        let localCount = 0;
+
+        for (const item of parsed) {
+          if (!item.id || !item.name || !item.tabLabel) {
+            console.warn('Caso omitido por falta de campos clave:', item);
+            continue;
+          }
+
+          const cleanItem = {
+            category: item.category || 'Gabinete Clínico',
+            tabLabel: item.tabLabel,
+            name: item.name,
+            desc: item.desc || '',
+            challenge: item.challenge || '',
+            solution: item.solution || '',
+            material: item.material || 'Porcelana Sinterizada',
+            duration: item.duration || '1 o 2 sesiones',
+            beforeImg: item.beforeImg || null,
+            afterImg: item.afterImg || '/src/assets/images/bellini_teeth_after_1779371142222.png',
+            galleryImages: Array.isArray(item.galleryImages) ? item.galleryImages : [],
+            galleryDescriptions: Array.isArray(item.galleryDescriptions) ? item.galleryDescriptions : [],
+            doctorNotes: item.doctorNotes || null,
+            orderIndex: typeof item.orderIndex === 'number' ? item.orderIndex : null,
+            updatedAt: serverTimestamp()
+          };
+
+          if (isRealFirebaseAdmin) {
+            let finalCreatedAt = serverTimestamp();
+            try {
+              const existingDoc = await getDoc(doc(db, 'cases', item.id));
+              if (existingDoc.exists()) {
+                const existingData = existingDoc.data();
+                if (existingData && existingData.createdAt) {
+                  finalCreatedAt = existingData.createdAt;
+                }
+              }
+            } catch (errExists) {
+              console.warn('Preservando createdAt fallo o no existe aun:', errExists);
+            }
+
+            await setDoc(doc(db, 'cases', item.id), {
+              ...cleanItem,
+              createdAt: finalCreatedAt
+            });
+            importCount++;
+          } else {
+            // Backup locally
+            const localCases = getLocalCases();
+            const existingIdx = localCases.findIndex(c => c.id === item.id);
+            const serializedItem = {
+              ...cleanItem,
+              id: item.id,
+              createdAt: { seconds: Date.now() / 1000 },
+              updatedAt: { seconds: Date.now() / 1000 }
+            };
+            if (existingIdx > -1) {
+              localCases[existingIdx] = serializedItem as any;
+            } else {
+              localCases.push(serializedItem as any);
+            }
+            saveLocalCases(localCases);
+            localCount++;
+          }
+        }
+
+        if (isRealFirebaseAdmin) {
+          setSuccessMessage(`Se importaron con éxito ${importCount} casos en tu nueva base de datos Firestore de Google.`);
+        } else {
+          setSuccessMessage(`Se guardaron con éxito ${localCount} casos en el almacenamiento local de este navegador.`);
+        }
+
+        setTimeout(() => setSuccessMessage(null), 5000);
+        fetchCases();
+        onCasesUpdated();
+      } catch (err: any) {
+        setErrorMessage('Error al parsear o subir el archivo de respaldo: ' + err.message);
+      } finally {
+        setSubmitting(false);
+        // Reset file input target value
+        e.target.value = '';
+      }
+    };
+
+    reader.onerror = () => {
+      setErrorMessage('Error al leer el archivo seleccionado.');
+      setSubmitting(false);
+    };
+
+    reader.readAsText(file);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tabLabel.trim() || !name.trim()) {
@@ -452,8 +596,6 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
       setErrorMessage(null);
       
       let savedToFirestore = false;
-      const isRealFirebaseAdmin = user?.email?.toLowerCase() === 'mesfede@gmail.com' || (import.meta.env.VITE_ADMIN_EMAIL && user?.email?.toLowerCase() === import.meta.env.VITE_ADMIN_EMAIL?.toLowerCase());
-      
       if (isRealFirebaseAdmin) {
         try {
           await setDoc(doc(db, 'cases', finalId), payload);
@@ -503,11 +645,6 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
   };
 
   if (!isOpen) return null;
-
-  const uEmail = user?.email?.toLowerCase();
-  const mainAdmin = 'mesfede@gmail.com';
-  const scndAdmin = import.meta.env.VITE_ADMIN_EMAIL?.toLowerCase();
-  const isUserAdmin = (user && (uEmail === mainAdmin || (scndAdmin && uEmail === scndAdmin))) || isPasscodeAuthorized;
 
   return (
     <div className="fixed inset-0 bg-black/95 z-[999999] backdrop-blur-xl flex justify-center items-center p-4 overflow-hidden text-[#ECE8E1]">
@@ -682,6 +819,65 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
                     <RotateCcw size={12} /> Cargar Caso por Defecto
                   </button>
                 </div>
+
+                {/* Database Migration and Backup Panel */}
+                <div className="p-3 bg-indigo-950/10 border-b border-[#222]/60 flex flex-col gap-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[9px] text-indigo-400 uppercase tracking-wider font-semibold">Migración y Respaldos:</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={exportCasesToJson}
+                      type="button"
+                      title="Descargar una copia de seguridad local de todos los casos de la base actual"
+                      className="bg-[#111122] border border-[#2c2c4d] hover:border-indigo-400 text-indigo-300 text-[9px] uppercase tracking-widest py-2 rounded flex justify-center items-center gap-1 transition-all active:scale-[0.95] cursor-pointer"
+                    >
+                      📥 Exportar JSON
+                    </button>
+                    <label 
+                      title="Subir un archivo de copia de respaldo (.json) a la base de datos de Google que esté activa"
+                      className="bg-[#112211] border border-[#2c4d2c] hover:border-emerald-400 text-emerald-300 text-[9px] uppercase tracking-widest py-2 rounded flex justify-center items-center cursor-pointer text-center flex items-center justify-center gap-1 transition-all active:scale-[0.95]"
+                    >
+                      <span>📤 Importar JSON</span>
+                      <input 
+                        type="file" 
+                        accept=".json"
+                        onChange={importCasesFromJson}
+                        className="hidden" 
+                      />
+                    </label>
+                  </div>
+                  <p className="text-[8px] text-[#777] leading-tight mt-1 text-center font-mono">
+                    {isCustomProject 
+                      ? "✓ Usando tu base de datos personalizada y segura."
+                      : "⚠ Usando la base temporal de AI Studio. Exporta tu backup para no perder datos."}
+                  </p>
+                </div>
+
+                {hasCredentialsMismatch && (
+                  <div className="m-3 p-3 bg-red-950/20 border border-red-500/20 rounded text-[10px] text-red-300 leading-normal space-y-1.5 font-sans">
+                    <p className="font-semibold flex items-center gap-1 text-[11px] text-red-200">
+                      ⚠️ ¡Incompatibilidad detectada!
+                    </p>
+                    <p>
+                      Has puesto el ID de proyecto como <span className="font-mono text-white underline">{import.meta.env.VITE_FIREBASE_PROJECT_ID}</span>, pero tus claves de acceso (App ID / API Key) aún pertenecen al proyecto público temporal. Por esto Firebase deniega el permiso para escribir.
+                    </p>
+                    <div className="p-2 bg-black/40 rounded space-y-1 text-[9px] text-[#b5b5b5]">
+                      <p className="font-semibold text-white">Cómo solucionarlo:</p>
+                      <ol className="list-decimal pl-3.5 space-y-1">
+                        <li>Ve a tu consola Firebase de <span className="text-white">bellini-odontalgia</span>.</li>
+                        <li>En Ajustes de Proyecto, baja hasta la sección <strong>"Tus apps"</strong> (que actualmente está vacía).</li>
+                        <li>Haz clic en el botón con el icono <strong className="text-white">&lt;/&gt; (Web)</strong> para registrar una aplicación Web.</li>
+                        <li>Copia el nuevo set completo de claves de configuración Web y pásalas a AI Studio (Settings &gt; Environment Variables):</li>
+                      </ol>
+                      <ul className="list-none pl-1 mt-1 font-mono text-[8px] text-emerald-400 space-y-0.5 border-t border-white/[0.05] pt-1">
+                        <li>• <strong className="text-white">VITE_FIREBASE_API_KEY</strong>="..."</li>
+                        <li>• <strong className="text-white">VITE_FIREBASE_APP_ID</strong>="..."</li>
+                        <li>• <strong className="text-white">VITE_FIREBASE_AUTH_DOMAIN</strong>="{import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com"</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
 
                 {/* Cases List */}
                 <div className="flex-grow overflow-y-auto p-4 space-y-3 custom-scrollbar">

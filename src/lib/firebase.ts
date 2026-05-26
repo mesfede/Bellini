@@ -2,19 +2,26 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 
+const isCustomProject = !!import.meta.env.VITE_FIREBASE_PROJECT_ID;
+const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || "bellini-odontalgia";
+
 const firebaseConfig = {
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "uplifted-program-jpnh2",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:468327137002:web:d8c9007cc66d19c6c8e193",
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDlSoxYZN4wsEbHtQxBxx4YyXogYqbH_6U",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "uplifted-program-jpnh2.firebaseapp.com",
-  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || "ai-studio-981e4bba-0997-4e5d-96b6-6d1079f0c6d3",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "uplifted-program-jpnh2.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "468327137002",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || ""
+  projectId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:172524051130:web:b7d760a0d1a53184418083",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAkp-XkvJv5gh1dXR3vLa0V6S6yi-4aDSE",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "bellini-odontalgia.firebaseapp.com",
+  firestoreDatabaseId: isCustomProject 
+    ? (import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || "") 
+    : "", // Uses default Firestore database for the custom project
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "bellini-odontalgia.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "172524051130",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-7WHH61SVMF"
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId); /* CRITICAL: The app will break without this line */
+export const db = firebaseConfig.firestoreDatabaseId 
+  ? getFirestore(app, firebaseConfig.firestoreDatabaseId) 
+  : getFirestore(app); /* CRITICAL: The app will break without this line */
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
@@ -91,14 +98,5 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
-// Test Connection on load
-async function testConnection() {
-  try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration.");
-    }
-  }
-}
-testConnection();
+// Connection is tested dynamically on demand, no immediate forced startup check is needed
+
