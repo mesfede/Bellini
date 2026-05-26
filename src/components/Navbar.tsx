@@ -43,12 +43,12 @@ export function Navbar({ activeSection = 'hero' }: NavbarProps) {
         <a 
           href="#" 
           onClick={(e) => handleNavClick(e, 'hero')}
-          className="flex flex-col items-start z-50 transition-opacity hover:opacity-75"
+          className="flex flex-col items-center z-50 transition-opacity hover:opacity-75"
         >
-          <span className="text-xl md:text-2xl tracking-[0.25em] font-serif uppercase text-[var(--color-bellini-primary)]">
+          <span className="text-2xl md:text-3xl tracking-[0.25em] font-serif uppercase text-[var(--color-bellini-primary)]" style={{ transform: 'translateX(0.125em)' }}>
             Bellini
           </span>
-          <span className="text-[6px] md:text-[8px] tracking-[0.4em] font-sans uppercase text-[var(--color-bellini-primary)]/80 mt-1 ml-1">
+          <span className="text-[7px] md:text-[9px] tracking-[0.4em] font-sans uppercase text-[var(--color-bellini-primary)]/80 mt-1" style={{ transform: 'translateX(0.2em)' }}>
             Odontología
           </span>
         </a>
