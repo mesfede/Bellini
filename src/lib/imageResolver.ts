@@ -3,7 +3,15 @@ const imageModules = import.meta.glob('/src/assets/images/*', { eager: true });
 export function resolveClinicalImagePath(url: string | null | undefined): string {
   if (!url) return '';
   
-  const trimmed = url.trim();
+  let trimmed = url.trim();
+  
+  // Convert Google Drive viewer links to direct download links
+  const driveRegex = /(?:drive\.google\.com\/file\/d\/|drive\.google\.com\/open\?id=)([a-zA-Z0-9_-]+)/i;
+  const match = trimmed.match(driveRegex);
+  if (match && match[1]) {
+    // Return direct export URL for <img> tags
+    return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+  }
   
   // If it's an absolute HTTP/HTTPS or inline data, return as-is
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
