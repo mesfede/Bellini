@@ -25,7 +25,8 @@ import {
   Globe, 
   Check, 
   AlertTriangle,
-  RotateCcw
+  RotateCcw,
+  AlertCircle
 } from 'lucide-react';
 import { db, auth, loginWithGoogle, logout, OperationType, handleFirestoreError } from '../lib/firebase';
 import { resolveClinicalImagePath } from '../lib/imageResolver';
@@ -212,31 +213,6 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
           finalCases.push(lCase);
         }
       });
-
-      // Garantizar que el caso clínico base/defecto siempre se liste si Firestore está completamente vacío o si aún no se ha creado
-      const hasDefaultCase = finalCases.some(c => c.id === 'caso_defecto_1' || c.id === 'case_static_1');
-      if (!hasDefaultCase) {
-        finalCases.push({
-          id: 'caso_defecto_1',
-          category: 'Reconstrucción Dental Anterior de Alta Complejidad',
-          tabLabel: 'Caso Principal 01',
-          name: 'Reconstrucción Dental Anterior de Alta Complejidad',
-          desc: 'Restauración biomimética de la arquitectura adamantina mediante microcarillas cerámicas de preparación nula.',
-          challenge: 'Paciente presenta un severo desgaste erosivo incisal, desmineralización en el esmalte cervical y diastemas dispersos. Esta pérdida de soporte generaba fatiga biomecánica y sensibilidad constante.',
-          solution: 'Se elaboró un plan de adición mínimamente invasivo sin tallar dientes. Se cementaron microcarillas cerámicas sinterizadas imitando las propiedades prismáticas, refractarias y el halo opalescente natural de los dientes.',
-          material: 'Porcelana refractaria artesanal (0.3mm)',
-          duration: '2 citas (Diseño + Adhesión)',
-          beforeImg: '/src/assets/images/bellini_teeth_before_1779371123423.png',
-          afterImg: '/src/assets/images/bellini_teeth_after_1779371142222.png',
-          galleryImages: [
-            '/src/assets/images/bellini_foto01.jpg',
-            '/src/assets/images/bellini_foto02.jpg',
-            '/src/assets/images/bellini_foto03.jpg'
-          ],
-          doctorNotes: 'El objetivo prioritario fue restablecer la guía anterior y proteger la articulación temporomandibular mediante una adición aditiva, respetando el tejido biológico sano del paciente.',
-          orderIndex: 1
-        } as ClinicalCase);
-      }
 
       // Ordenar en memoria por orderIndex (menor número primero) y luego por createdAt desc como respaldo seguro
       const sorted = [...finalCases].sort((a, b) => {
@@ -689,8 +665,36 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
                 </p>
 
                 {errorMessage && (
-                  <div className="p-4 bg-red-950/20 border border-red-500/30 text-red-300 rounded text-xs text-left leading-relaxed font-mono">
-                    {errorMessage}
+                  <div className="w-full">
+                    <div className="p-4 bg-red-950/20 border border-red-500/30 text-red-300 rounded text-xs text-left leading-relaxed font-mono flex items-start gap-2">
+                       <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                       <span className="break-words w-full">{errorMessage}</span>
+                    </div>
+                    {errorMessage.includes('Missing or insufficient permissions') && (
+                      <div className="mt-3 p-4 bg-[#0a0a0a] border border-indigo-500/40 rounded text-indigo-300 text-xs text-left leading-relaxed shadow-lg">
+                         <strong className="text-indigo-400 block mb-2 uppercase tracking-widest text-[10px]"><AlertCircle size={14} className="inline mr-1" />Acción Requerida</strong>
+                         <p className="mb-3">Firebase ha bloqueado la operación porque las Reglas de Seguridad no se han configurado o están denegando el permiso. Dirígete a la Consola de Firebase, entra a Firestore -{'>'} Rules, y pega el siguiente código para habilitar tu usuario (<span className="text-white font-mono">{user?.email || 'mesfede@gmail.com'}</span>):</p>
+                         <textarea
+                           readOnly
+                           className="w-full h-40 bg-[#050505] text-[#A3A6AC] font-mono text-[10px] p-3 border border-white/10 rounded cursor-text outline-none resize-none"
+                           value={`rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} { allow read, write: if false; }
+    function isSignedIn() { return request.auth != null; }
+    function isVerifiedAdmin() { return isSignedIn() && request.auth.token.email.lower() == '${user?.email || 'mesfede@gmail.com'}'; }
+    function isValidId(id) { return id is string && id.size() >= 1 && id.matches('^[a-zA-Z0-9_\\\\-]+$'); }
+    function isValidCase(data) { return data.keys().hasAll(['category','tabLabel','name','desc','challenge','solution','material','duration','galleryImages']); }
+    match /cases/{caseId} {
+      allow get, list: if true;
+      allow create, update: if isVerifiedAdmin() && isValidId(caseId) && isValidCase(request.resource.data);
+      allow delete: if isVerifiedAdmin() && isValidId(caseId);
+    }
+  }
+}`}
+                         />
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -797,8 +801,36 @@ export function AdminPanel({ isOpen, onClose, onCasesUpdated }: AdminPanelProps)
                 </div>
 
                 {errorMessage && (
-                  <div className="m-3 p-3 bg-red-950/30 border border-red-500/20 text-red-300 rounded text-xs leading-relaxed">
-                    {errorMessage}
+                  <div className="m-3">
+                    <div className="p-3 bg-red-950/30 border border-red-500/20 text-red-300 rounded text-xs leading-relaxed flex items-start gap-2">
+                       <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                       <span className="break-words w-full">{errorMessage}</span>
+                    </div>
+                    {errorMessage.includes('Missing or insufficient permissions') && (
+                      <div className="mt-2 p-3 bg-[#0a0a0a] border border-indigo-500/40 rounded text-indigo-300 text-[10px] leading-relaxed shadow-lg">
+                         <strong className="text-indigo-400 block mb-1 uppercase tracking-widest text-[9px]"><AlertCircle size={10} className="inline mr-1" />Acción Requerida</strong>
+                         <p className="mb-2">Firebase ha bloqueado la operación porque las Reglas de Seguridad por defecto ('allow read, write: if false;') están activas. Copia el siguiente código y Reemplázalo en las reglas de tu Consola Firebase (Firestore Database -{'>'} Reglas) para habilitar tu usuario (<span className="text-white font-mono">{user?.email}</span>):</p>
+                         <textarea
+                           readOnly
+                           className="w-full h-32 bg-[#050505] text-[#A3A6AC] font-mono text-[9px] p-2 border border-white/10 rounded cursor-text outline-none resize-none"
+                           value={`rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} { allow read, write: if false; }
+    function isSignedIn() { return request.auth != null; }
+    function isVerifiedAdmin() { return isSignedIn() && request.auth.token.email.lower() == '${user?.email}'; }
+    function isValidId(id) { return id is string && id.size() >= 1 && id.matches('^[a-zA-Z0-9_\\\\-]+$'); }
+    function isValidCase(data) { return data.keys().hasAll(['category','tabLabel','name','desc','challenge','solution','material','duration','galleryImages']); }
+    match /cases/{caseId} {
+      allow get, list: if true;
+      allow create, update: if isVerifiedAdmin() && isValidId(caseId) && isValidCase(request.resource.data);
+      allow delete: if isVerifiedAdmin() && isValidId(caseId);
+    }
+  }
+}`}
+                         />
+                      </div>
+                    )}
                   </div>
                 )}
 

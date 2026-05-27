@@ -9,8 +9,9 @@ export function resolveClinicalImagePath(url: string | null | undefined): string
   const driveRegex = /(?:drive\.google\.com\/file\/d\/|drive\.google\.com\/open\?id=)([a-zA-Z0-9_-]+)/i;
   const match = trimmed.match(driveRegex);
   if (match && match[1]) {
-    // Return direct export URL for <img> tags
-    return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+    // Return direct export URL for <img> tags. 
+    // Using thumbnail endpoint or lh3 as it bypasses some of the new Google Drive 3rd party cookie restrictions for images.
+    return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1500`;
   }
   
   // If it's an absolute HTTP/HTTPS or inline data, return as-is

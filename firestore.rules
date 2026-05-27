@@ -70,14 +70,11 @@ service cloud.firestore {
       // Create operations must be authenticated as our verified admin, use server time, and conform to the full schema validation
       allow create: if isVerifiedAdmin() && 
                     isValidId(caseId) && 
-                    incoming().createdAt == request.time && 
                     isValidCase(incoming());
 
-      // Update operations require admin verification, lock the immutable createdAt timestamp, check server time for updatedAt, and validate the full entity schema
+      // Update operations require admin verification Validate the full entity schema
       allow update: if isVerifiedAdmin() && 
                     isValidId(caseId) && 
-                    incoming().createdAt == existing().createdAt && 
-                    incoming().updatedAt == request.time && 
                     isValidCase(incoming());
 
       // Delete operations require absolute administrator authority

@@ -72,14 +72,6 @@ export function Gallery() {
         }
       });
 
-      const hasDefaultCase = finalCases.some((c: any) => c.id === 'caso_defecto_1' || c.id === 'case_static_1' || c.id === 'default_1');
-      if (finalCases.length > 0 && !hasDefaultCase) {
-        finalCases.push({
-          ...STATIC_FALLBACK_CASES[0],
-          orderIndex: 99
-        });
-      }
-
       if (finalCases.length > 0) {
         const sorted = [...finalCases].sort((a: any, b: any) => {
           const valA = (a.orderIndex !== undefined && a.orderIndex !== null) ? Number(a.orderIndex) : 9999;
@@ -105,7 +97,7 @@ export function Gallery() {
         setCases(sorted);
         setActiveCaseIndex(0);
       } else {
-        setCases(STATIC_FALLBACK_CASES);
+        setCases([]);
         setActiveCaseIndex(0);
       }
     } catch (e) {
@@ -128,7 +120,23 @@ export function Gallery() {
     return () => window.removeEventListener('bellini-cases-updated', handleRefresh);
   }, []);
 
-  const activeCase = cases[activeCaseIndex] || cases[0] || STATIC_FALLBACK_CASES[0];
+  if (cases.length === 0) {
+    return (
+      <section 
+        id="casos" 
+        className="w-screen h-screen shrink-0 snap-start relative px-4 md:px-12 lg:px-20 pt-24 md:pt-[110px] pb-6 flex flex-col justify-center items-center bg-[#0a0a0a] text-[var(--color-bellini-primary)] overflow-hidden"
+      >
+         <span className="text-[10px] uppercase tracking-[0.3em] text-[#8e8e8e] mb-4 block font-light">
+           Gabinete Clínico
+         </span>
+         <h2 className="font-serif text-2xl md:text-4xl leading-tight text-[#ECE8E1] font-light">
+           No hay casos clínicos disponibles.
+         </h2>
+      </section>
+    );
+  }
+
+  const activeCase = cases[activeCaseIndex] || cases[0];
 
   return (
     <section 
